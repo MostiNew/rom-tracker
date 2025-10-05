@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+<title>ROM Tracker – Local Range of Motion</title>
+<style>
+  :root { --bg:#0b1016; --card:#121820; --muted:#8aa0b2; --text:#eaf2f8; --accent:#50c878; --danger:#ff6b6b; --warn:#ffc857; }
+  *{box-sizing:border-box;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
+  body{margin:0;background:linear-gradient(180deg,#0b1016,#0e141c);color:var(--text)}
+  .wrap{max-width:960px;margin:0 auto;padding:16px 14px 40px}
+  header{display:flex;align-items:center;gap:12px;justify-content:space-between;margin:6px 0 14px}
+  h1{font-size:22px;margin:0}
+  .card{background:var(--card);border:1px solid #1d2732;border-radius:18px;padding:14px;margin:10px 0;box-shadow:0 6px 24px rgba(0,0,0,.28)}
+  label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px}
+  select, input[type="text"], button{width:100%;padding:12px 12px;border-radius:12px;border:1px solid #203040;background:#0b1118;color:var(--text);font-size:15px}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+  .btn{cursor:pointer;transition:transform .02s ease,opacity .2s}
+  .btn:active{transform:scale(.98)}
+  .btn.primary{background:var(--accent);color:#072d19;border-color:#0d5b3a;font-weight:700}
+  .btn.warn{background:var(--warn);color:#432; border-color:#a77}
+  .btn.danger{background:var(--danger);color:#320a0a;border-color:#7a1e1e}
+  .btn.ghost{background:#0a121a;border-color:#1d2a38}
+  .kpi{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+  .tile{background:#0a121a;border:1px solid #1d2a38;border-radius:16px;padding:14px;text-align:center}
+  .tile h3{margin:4px 0 0;font-size:24px}
+  .tile span{font-size:12px;color:var(--muted)}
+  .muted{color:var(--muted)}
+  table{width:100%;border-collapse:collapse}
+  th, td{font-size:13px;border-bottom:1px solid #203040;padding:10px 8px;text-align:left;vertical-align:top}
+  th{color:#a9bfd2;font-weight:600}
+  .pill{display:inline-block;padding:4px 8px;border-radius:999px;background:#0e1822;border:1px solid #1e2d3e;font-size:12px}
+  .hint{font-size:12px;color:var(--muted);margin-top:8px}
+  .flex{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .right{margin-left:auto}
+  .small{font-size:12px}
+  .separator{height:1px;background:#203040;margin:10px 0;border-radius:1px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>🦾 ROM Tracker</h1>
+    <div class="flex">
+      <button id="btnEnable" class="btn ghost">Enable Sensors</button>
+      <button id="btnCalibrate" class="btn ghost">Set Zero</button>
+      <button id="btnResetMinMax" class="btn ghost">Reset Min/Max</button>
+    </div>
+  </header>
+
+  <div class="card">
+    <div class="row">
+      <div>
+        <label>Joint</label>
+        <select id="joint">
+          <option>Shoulder</option>
+          <option>Elbow</option>
+          <option>Wrist</option>
+          <option>Hip</option>
+          <option>Knee</option>
+          <option>Ankle</option>
+          <option>Cervical Spine</option>
+          <option>Lumbar Spine</option>
+          <option>Custom</option>
+        </select>
+      </div>
+      <div>
+        <label>Plane / Movement (suggested axis)</label>
+        <select id="plane">
+          <option value="beta">Flexion/Extension (β / pitch)</option>
+          <option value="gamma">Abduction/Adduction (γ / roll)</option>
+          <option value="alpha">Rotation (α / yaw)*</option>
+        </select>
+      </div>
+    </div>
+    <div class="row">
+      <div>
+        <label>Side</label>
+        <select id="side">
+          <option>Right</option>
+          <option>Left</option>
+          <option>Midline</option>
+        </select>
+      </div>
+      <div>
+        <label>Notes (optional)</label>
+        <input id="notes" type="text" placeholder="e.g., post-op wk 2, pain at end-range">
+      </div>
+    </div>
+    <div class="hint">* α/yaw may be less stable on some phones. For rotation, try placing phone on distal segment and keep devices away from magnets.</div>
+  </div>
+
+  <div class="card">
+    <div class="kpi">
+      <div class="tile">
+        <span>Angle (°)</span>
+        <h3 id="angle">0</h3>
+      </div>
+      <div class="tile">
+        <span>Max (°)</span>
+        <h3 id="max">0</h3>
+      </div>
+      <div class="tile">
+        <span>Min (°)</span>
+        <h3 id="min">0</h3>
+      </div>
+      <div class="tile">
+        <span>Zero Ref (°)</span>
+        <h3 id="zero">0</h3>
+      </div>
+    </div>
+    <div class="flex" style="margin-top:10px;">
+      <button id="btnStart" class="btn primary">Start</button>
+      <button id="btnStop" class="btn warn">Stop</button>
+      <button id="btnSave" class="btn">Save Record</button>
+      <button id="btnExport" class="btn">Export CSV</button>
+      <span class="pill right" id="sensorStatus">Sensors: idle</span>
+    </div>
+    <div class="hint">Place/strap the phone on the distal segment (e.g., forearm for elbow, tibia for knee). Tap <b>Set Zero</b> at neutral, then move through range.</div>
+  </div>
+
+  <div class="card">
+    <div class="flex">
+      <strong>Records</strong>
+      <span class="small muted right" id="count">0 saved</span>
+    </div>
+    <div class="separator"></div>
+    <div style="overflow:auto">
+      <table id="table">
+        <thead>
+          <tr>
+            <th>Time</th>
+            <th>Joint/Side</th>
+            <th>Plane</th>
+            <th>Angle°</th>
+            <th>Min°</th>
+            <th>Max°</th>
+            <th>Notes</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+    <div class="hint">Data is stored locally on your device (LocalStorage). No cloud, no tracking.</div>
+  </div>
+
+  <div class="card">
+    <strong>Manual Mode (if sensors unavailable)</strong>
+    <div class="row" style="margin-top:8px;">
+      <div>
+        <label>Set angle manually (°)</label>
+        <input id="manualAngle" type="text" inputmode="decimal" placeholder="e.g., 92.5">
+      </div>
+      <div class="flex" style="align-items:flex-end">
+        <button id="btnApplyManual" class="btn">Apply</button>
+      </div>
+    </div>
+    <div class="hint">Use this if Device Motion is blocked by the browser or policy. You can still log and export.</div>
+  </div>
+
+  <p class="muted small">
+    Disclaimer: This tool is for screening, exercise guidance, and documentation support. It doesn’t replace clinical judgment or certified goniometry where required.
+  </p>
+</div>
+
+<script>
+(function(){
+  const ui = {
+    angle: document.getElementById('angle'),
+    min: document.getElementById('min'),
+    max: document.getElementById('max'),
+    zero: document.getElementById('zero'),
+    sensorStatus: document.getElementById('sensorStatus'),
+    btnEnable: document.getElementById('btnEnable'),
+    btnCalibrate: document.getElementById('btnCalibrate'),
+    btnResetMinMax: document.getElementById('btnResetMinMax'),
+    btnStart: document.getElementById('btnStart'),
+    btnStop: document.getElementById('btnStop'),
+    btnSave: document.getElementById('btnSave'),
+    btnExport: document.getElementById('btnExport'),
+    joint: document.getElementById('joint'),
+    plane: document.getElementById('plane'),
+    side: document.getElementById('side'),
+    notes: document.getElementById('notes'),
+    tbody: document.getElementById('tbody'),
+    count: document.getElementById('count'),
+    manualAngle: document.getElementById('manualAngle'),
+    btnApplyManual: document.getElementById('btnApplyManual'),
+  };
+
+  // State
+  let running = false;
+  let zero = 0;
+  let min = 0;
+  let max = 0;
+  let currentAngle = 0;
+  let listenerAdded = false;
+
+  // Storage
+  const KEY = 'rom-tracker-records-v1';
+  function loadRecords(){
+    try { return JSON.parse(localStorage.getItem(KEY) || '[]'); } catch { return []; }
+  }
+  function saveRecords(arr){
+    localStorage.setItem(KEY, JSON.stringify(arr));
+  }
+  function fmtTime(ts){
+    const d = new Date(ts);
+    return d.toLocaleString();
+  }
+  function refreshTable(){
+    const data = loadRecords();
+    ui.count.textContent = `${data.length} saved`;
+    ui.tbody.innerHTML = data.map((r, idx)=> `
+      <tr>
+        <td>${fmtTime(r.time)}</td>
+        <td>${r.joint} (${r.side})</td>
+        <td>${r.plane}</td>
+        <td>${r.angle.toFixed(1)}</td>
+        <td>${r.min.toFixed(1)}</td>
+        <td>${r.max.toFixed(1)}</td>
+        <td>${r.notes ? r.notes.replace(/</g,'&lt;') : ''}</td>
+        <td><button class="btn small danger" data-del="${idx}">Delete</button></td>
+      </tr>
+    `).join('');
+  }
+  refreshTable();
+
+  // Delete handler
+  document.addEventListener('click', (e)=>{
+    const btn = e.target.closest('button[data-del]');
+    if(!btn) return;
+    const idx = +btn.dataset.del;
+    const arr = loadRecords();
+    arr.splice(idx,1);
+    saveRecords(arr);
+    refreshTable();
+  });
+
+  // Sensor helpers
+  function isIOS(){ return /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints>1); }
+
+  async function enableSensors(){
+    try {
+      if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
+        const res = await DeviceMotionEvent.requestPermission();
+        if (res !== 'granted') throw new Error('Permission denied');
+      }
+      if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+        const res2 = await DeviceOrientationEvent.requestPermission();
+        // Some iOS versions only gate one of the two; ignore if not present
+      }
+      ui.sensorStatus.textContent = 'Sensors: ready';
+      ui.sensorStatus.style.background = 'transparent';
+      // Add listener if not present
+      if (!listenerAdded) {
+        window.addEventListener('deviceorientation', onOrient, true);
+        listenerAdded = true;
+      }
+    } catch (err){
+      ui.sensorStatus.textContent = 'Sensors: blocked';
+      ui.sensorStatus.style.background = '#331111';
+      alert('Motion/Orientation permission was not granted. You can still use Manual Mode.');
+    }
+  }
+
+  function getAxisAngle(alpha, beta, gamma, plane){
+    // Normalize angles: alpha(0..360), beta(-180..180), gamma(-90..90)
+    let val = 0;
+    switch(plane){
+      case 'alpha':
+        // Convert yaw to -180..180 for better diffs
+        val = ((alpha+540)%360)-180;
+        break;
+      case 'beta':
+        val = beta; // pitch
+        break;
+      case 'gamma':
+        val = gamma; // roll
+        break;
+    }
+    return val;
+  }
+
+  function onOrient(e){
+    if (!running) return;
+    // Some browsers pass nulls when not ready
+    const a = (typeof e.alpha === 'number') ? e.alpha : 0;
+    const b = (typeof e.beta === 'number') ? e.beta : 0;
+    const g = (typeof e.gamma === 'number') ? e.gamma : 0;
+
+    const axis = ui.plane.value;
+    const raw = getAxisAngle(a,b,g,axis);
+    currentAngle = raw - zero;
+
+    // Keep within -360..360 just in case
+    if (currentAngle > 360) currentAngle -= 360;
+    if (currentAngle < -360) currentAngle += 360;
+
+    // Track min/max
+    if (currentAngle > max) max = currentAngle;
+    if (currentAngle < min) min = currentAngle;
+
+    // Smooth display (simple)
+    ui.angle.textContent = currentAngle.toFixed(1);
+    ui.max.textContent = max.toFixed(1);
+    ui.min.textContent = min.toFixed(1);
+  }
+
+  // UI actions
+  ui.btnEnable.addEventListener('click', enableSensors);
+
+  ui.btnCalibrate.addEventListener('click', ()=>{
+    // Set zero to current raw axis value
+    // Force a one-time read by temporarily listening once if not running
+    const axis = ui.plane.value;
+    const takeZero = (alpha,beta,gamma)=>{
+      zero = getAxisAngle(alpha,beta,gamma,axis);
+      ui.zero.textContent = zero.toFixed(1);
+    };
+
+    // Best effort: use last known via DeviceOrientationAbsolute if available
+    let handled = false;
+    const once = (e)=>{
+      handled = true;
+      const a = (typeof e.alpha === 'number') ? e.alpha : 0;
+      const b = (typeof e.beta === 'number') ? e.beta : 0;
+      const g = (typeof e.gamma === 'number') ? e.gamma : 0;
+      takeZero(a,b,g);
+      window.removeEventListener('deviceorientation', once, true);
+    };
+    window.addEventListener('deviceorientation', once, true);
+
+    // Fallback if event doesn't fire rapidly
+    setTimeout(()=>{
+      if (!handled){ zero = 0; ui.zero.textContent = '0.0'; }
+    }, 300);
+  });
+
+  ui.btnResetMinMax.addEventListener('click', ()=>{
+    min = 0; max = 0;
+    ui.min.textContent = '0.0'; ui.max.textContent = '0.0';
+  });
+
+  ui.btnStart.addEventListener('click', ()=>{
+    if (!listenerAdded) window.addEventListener('deviceorientation', onOrient, true);
+    listenerAdded = true;
+    running = true;
+    ui.sensorStatus.textContent = 'Sensors: measuring…';
+    ui.sensorStatus.style.background = 'transparent';
+  });
+
+  ui.btnStop.addEventListener('click', ()=>{
+    running = false;
+    ui.sensorStatus.textContent = 'Sensors: stopped';
+  });
+
+  ui.btnSave.addEventListener('click', ()=>{
+    const rec = {
+      time: Date.now(),
+      joint: ui.joint.value,
+      side: ui.side.value,
+      plane: ui.plane.options[ui.plane.selectedIndex].text,
+      angle: Number.isFinite(currentAngle) ? currentAngle : 0,
+      min: Number.isFinite(min) ? min : 0,
+      max: Number.isFinite(max) ? max : 0,
+      zero: Number.isFinite(zero) ? zero : 0,
+      notes: ui.notes.value.trim()
+    };
+    const arr = loadRecords();
+    arr.unshift(rec);
+    saveRecords(arr);
+    refreshTable();
+    // small UX touch
+    ui.btnSave.textContent = 'Saved ✓';
+    setTimeout(()=> ui.btnSave.textContent = 'Save Record', 700);
+  });
+
+  ui.btnExport.addEventListener('click', ()=>{
+    const data = loadRecords();
+    const header = ['time_iso','joint','side','plane','angle_deg','min_deg','max_deg','zero_ref_deg','notes'];
+    const lines = [header.join(',')];
+    data.forEach(r=>{
+      const row = [
+        new Date(r.time).toISOString(),
+        r.joint, r.side, `"${r.plane}"`,
+        r.angle.toFixed(2), r.min.toFixed(2), r.max.toFixed(2), r.zero.toFixed(2),
+        `"${(r.notes||'').replace(/"/g,'""')}"`
+      ];
+      lines.push(row.join(','));
+    });
+    const blob = new Blob([lines.join('\n')], {type:'text/csv'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'rom-tracker.csv';
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
+  });
+
+  // Manual mode
+  ui.btnApplyManual.addEventListener('click', ()=>{
+    const v = parseFloat(ui.manualAngle.value.replace(',', '.'));
+    if (Number.isNaN(v)) { alert('Enter a valid number'); return; }
+    currentAngle = v;
+    if (v > max) max = v;
+    if (v < min) min = v;
+    ui.angle.textContent = currentAngle.toFixed(1);
+    ui.max.textContent = max.toFixed(1);
+    ui.min.textContent = min.toFixed(1);
+  });
+
+  // Improve UX on first tap for iOS
+  document.addEventListener('touchstart', ()=>{}, {passive:true});
+})();
+</script>
+</body>
+</html>
