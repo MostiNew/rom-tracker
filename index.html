@@ -1,45 +1,51 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-<title>YouMOVE ROM Tracker – Full Session</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+<title>ROM Tracker – YouMOVE</title>
 <style>
-:root {
-  --bg:#0b1016; --card:#121820; --muted:#8aa0b2; --text:#eaf2f8; --accent:#50c878; --danger:#ff6b6b; --warn:#ffc857;
-}
-*{box-sizing:border-box;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;}
-body{margin:0;background:linear-gradient(180deg,#0b1016,#0e141c);color:var(--text);}
-.wrap{max-width:960px;margin:0 auto;padding:16px 14px 40px;}
-header{display:flex;align-items:center;gap:12px;justify-content:space-between;margin:6px 0 14px;}
-h1{font-size:22px;margin:0;}
-.card{background:var(--card);border:1px solid #1d2732;border-radius:18px;padding:14px;margin:10px 0;box-shadow:0 6px 24px rgba(0,0,0,.28);}
-label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px;}
-select,input[type="text"],button,input[type="number"]{width:100%;padding:12px 12px;border-radius:12px;border:1px solid #203040;background:#0b1118;color:var(--text);font-size:15px;}
-.row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
-.kpi{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;}
-.tile{background:#0a121a;border:1px solid #1e2d3e;border-radius:16px;padding:14px;text-align:center;}
-.tile h3{margin:4px 0 0;font-size:24px;}
-.tile span{font-size:12px;color:var(--muted);}
-.flex{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
-.right{margin-left:auto;}
-.small{font-size:12px;}
-.separator{height:1px;background:#203040;margin:10px 0;border-radius:1px;}
+:root { --bg:#0b1016; --card:#121820; --muted:#8aa0b2; --text:#eaf2f8; --accent:#50c878; --danger:#ff6b6b; --warn:#ffc857; --flash:#50c878; }
+*{box-sizing:border-box;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
+body{margin:0;background:linear-gradient(180deg,#0b1016,#0e141c);color:var(--text)}
+.wrap{max-width:960px;margin:0 auto;padding:16px 14px 40px}
+header{display:flex;align-items:center;gap:12px;justify-content:space-between;margin:6px 0 14px}
+h1{font-size:22px;margin:0}
+.card{background:var(--card);border:1px solid #1d2732;border-radius:18px;padding:14px;margin:10px 0;box-shadow:0 6px 24px rgba(0,0,0,.28)}
+label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px}
+select, input[type="text"], button{width:100%;padding:12px 12px;border-radius:12px;border:1px solid #203040;background:#0b1118;color:var(--text);font-size:15px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.btn{cursor:pointer;transition:transform .02s ease,opacity .2s}
+.btn:active{transform:scale(.98)}
+.btn.primary{background:var(--accent);color:#072d19;border-color:#0d5b3a;font-weight:700}
+.btn.warn{background:var(--warn);color:#432;border-color:#a77}
+.btn.danger{background:var(--danger);color:#320a0a;border-color:#7a1e1e}
+.btn.ghost{background:#0a121a;border-color:#1d2a38}
+.kpi{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
+.tile{background:#0a121a;border:1px solid #1d2a38;border-radius:16px;padding:14px;text-align:center}
+.tile h3{margin:4px 0 0;font-size:24px}
+.tile span{font-size:12px;color:var(--muted)}
+.muted{color:var(--muted)}
+.flex{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.right{margin-left:auto}
+.small{font-size:12px}
+.sparkline{height:48px;width:100%;border-radius:8px;background:linear-gradient(180deg,#081017,#071017);display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:12px;position:relative}
+.sparkline .countdown{position:absolute;left:12px;font-size:12px;color:var(--muted)}
+.sparkline .flash{position:absolute;right:12px;width:10px;height:10px;border-radius:50%;opacity:0;transition:opacity .18s ease, transform .18s ease}
+.sparkline.flashging { box-shadow:0 0 18px rgba(80,200,120,0.12); }
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:24px;background:#0f1b23;padding:10px 14px;border-radius:10px;border:1px solid #1f2f3a;box-shadow:0 6px 20px rgba(0,0,0,.4);display:none;z-index:999}
 button:focus{outline:3px solid rgba(80,200,120,0.18);outline-offset:2px;}
-.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:24px;background:#0f1b23;padding:10px 14px;border-radius:10px;border:1px solid #1f2f3a;box-shadow:0 6px 20px rgba(0,0,0,.4);display:none;z-index:999;}
 </style>
 </head>
 <body>
 <div class="wrap">
 <header>
-  <h1>YouMOVE – ROM Full Session</h1>
-  <div class="flex">
-    <button id="btnEnable" class="btn ghost">Enable Sensors</button>
-    <button id="btnCalibrate" class="btn ghost">Set Zero</button>
-  </div>
+  <h1>YouMOVE – Gelenkbewegung: privat & offline</h1>
 </header>
 
+<!-- Measurement & Manual + Recording Card -->
 <div class="card">
+  <strong>Joint & Movement</strong>
   <div class="row">
     <div>
       <label>Joint</label>
@@ -58,13 +64,13 @@ button:focus{outline:3px solid rgba(80,200,120,0.18);outline-offset:2px;}
     <div>
       <label>Plane / Movement</label>
       <select id="plane">
-        <option value="beta">Flexion/Extension (β)</option>
-        <option value="gamma">Abduction/Adduction (γ)</option>
-        <option value="alpha">Rotation (α)</option>
+        <option value="beta">Flexion/Extension (β / pitch)</option>
+        <option value="gamma">Abduction/Adduction (γ / roll)</option>
+        <option value="alpha">Rotation (α / yaw)</option>
       </select>
     </div>
   </div>
-  <div class="row">
+  <div class="row" style="margin-top:6px;">
     <div>
       <label>Side</label>
       <select id="side">
@@ -74,184 +80,226 @@ button:focus{outline:3px solid rgba(80,200,120,0.18);outline-offset:2px;}
       </select>
     </div>
     <div>
-      <label>Notes</label>
-      <input id="notes" type="text" placeholder="e.g., post-op wk2, pain at end-range">
+      <label>Notes (optional)</label>
+      <input id="notes" type="text" placeholder="e.g., post-op wk 2, pain at end-range">
     </div>
   </div>
-</div>
 
-<div class="card">
-  <div class="kpi">
+  <div class="kpi" style="margin-top:12px;">
     <div class="tile"><span>Angle (°)</span><h3 id="angle">—</h3></div>
     <div class="tile"><span>Max (°)</span><h3 id="max">—</h3></div>
     <div class="tile"><span>Min (°)</span><h3 id="min">—</h3></div>
     <div class="tile"><span>Zero Ref (°)</span><h3 id="zero">—</h3></div>
-    <div class="tile"><span>Duration</span><h3 id="duration">0s</h3></div>
   </div>
-  <div class="flex" style="margin-top:10px;">
-    <button id="btnStart" class="btn primary">Start Session</button>
-    <button id="btnStop" class="btn warn">Stop Session</button>
-    <button id="btnSave" class="btn">Save Snapshot</button>
-    <button id="btnExport" class="btn">Export CSV</button>
-    <span class="pill right" id="sensorStatus">Sensors: idle</span>
-  </div>
-</div>
 
-<div class="card">
-  <strong>Manual Mode</strong>
-  <div class="row" style="margin-top:8px;">
+  <div class="flex" style="margin-top:10px;">
+    <button id="btnEnable" class="btn ghost">Enable Sensors</button>
+    <button id="btnCalibrate" class="btn ghost">Set Zero</button>
+    <button id="btnResetMinMax" class="btn ghost">Reset Min/Max</button>
+  </div>
+
+  <div class="row" style="margin-top:12px;">
     <div>
-      <label>Set angle manually (°)</label>
-      <input id="manualAngle" type="text" placeholder="e.g., 92.5">
+      <label>Manual Angle (°)</label>
+      <input id="manualAngle" type="text" inputmode="decimal" placeholder="e.g., 92.5">
     </div>
     <div class="flex" style="align-items:flex-end">
       <button id="btnApplyManual" class="btn">Apply</button>
     </div>
   </div>
-</div>
 
-<div class="card">
-  <strong>Session Records</strong>
-  <span class="small muted right" id="count">0 saved</span>
-  <div class="separator"></div>
-  <div style="overflow:auto">
-    <table id="table">
-      <thead>
-        <tr>
-          <th>Time</th>
-          <th>Joint/Side</th>
-          <th>Plane</th>
-          <th>Angle°</th>
-          <th>Min°</th>
-          <th>Max°</th>
-          <th>Notes</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody id="tbody"></tbody>
-    </table>
+  <div class="row" style="margin-top:12px;">
+    <div>
+      <label>Auto-Record Interval</label>
+      <select id="autoInterval">
+        <option value="0" selected>No auto-record</option>
+        <option value="10">Every 10 sec</option>
+        <option value="20">Every 20 sec</option>
+        <option value="30">Every 30 sec</option>
+      </select>
+    </div>
+    <div class="flex" style="align-items:flex-end">
+      <button id="btnStartSession" class="btn primary">Start Recording</button>
+      <button id="btnStopSession" class="btn warn">Stop Recording</button>
+      <button id="btnSave" class="btn">Save Record</button>
+      <button id="btnExport" class="btn">Export CSV</button>
+    </div>
   </div>
-</div>
 
-<p class="muted small" style="margin-top:12px;">
-Disclaimer: For <strong>screening, exercise guidance, documentation</strong> only. <br>
-<strong>Contact:</strong> Moustafa Ali | <a href="mailto:mostischmidbauer@web.de">Email</a>
-</p>
+  <div style="margin-top:8px;" class="sparkline" id="sparkline">
+    <span class="countdown" id="countdown"></span>
+    <span id="sparkText">No session yet</span>
+    <span class="flash" id="sparkFlash"></span>
+  </div>
+
+  <div class="hint" style="margin-top:6px;">
+    Use sensors or manual input. Auto-record captures snapshots during active session. Data is stored locally.
+  </div>
 </div>
 
 <div class="toast" id="toast"></div>
 
 <script>
 (function(){
-const ui = {
-  angle: document.getElementById('angle'),
-  min: document.getElementById('min'),
-  max: document.getElementById('max'),
-  zero: document.getElementById('zero'),
-  duration: document.getElementById('duration'),
-  sensorStatus: document.getElementById('sensorStatus'),
-  btnEnable: document.getElementById('btnEnable'),
-  btnCalibrate: document.getElementById('btnCalibrate'),
-  btnStart: document.getElementById('btnStart'),
-  btnStop: document.getElementById('btnStop'),
-  btnSave: document.getElementById('btnSave'),
-  btnExport: document.getElementById('btnExport'),
-  joint: document.getElementById('joint'),
-  plane: document.getElementById('plane'),
-  side: document.getElementById('side'),
-  notes: document.getElementById('notes'),
-  tbody: document.getElementById('tbody'),
-  count: document.getElementById('count'),
-  manualAngle: document.getElementById('manualAngle'),
-  btnApplyManual: document.getElementById('btnApplyManual')
-};
-
-let running=false, zero=0, min=Infinity, max=-Infinity, currentAngle=0, listenerAdded=false, sessionRecords=[], sessionStart=0, sessionTimer;
-const KEY='rom-tracker-session-v1';
-
-function loadRecords(){try{return JSON.parse(localStorage.getItem(KEY)||'[]');}catch{return[];}}
-function saveRecords(arr){localStorage.setItem(KEY,JSON.stringify(arr));}
-function fmtTime(ts){return new Date(ts).toLocaleString();}
-function showToast(txt,ms=1200){ui.toast.textContent=txt;ui.toast.style.display='block';clearTimeout(ui.toast._t);ui.toast._t=setTimeout(()=>ui.toast.style.display='none',ms);}
-function uuidv4(){return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.random()*16|0,v=c==='x'?r:(r&0x3|0x8);return v.toString(16);});}
-
-function refreshTable(){
-  ui.tbody.innerHTML='';
-  sessionRecords.forEach((r,idx)=>{
-    const tr=document.createElement('tr');
-    ['time','joint','plane','angle','min','max','notes'].forEach(k=>{
-      const td=document.createElement('td');
-      if(k==='time') td.textContent=fmtTime(r.time);
-      else if(k==='joint') td.textContent=`${r.joint} (${r.side})`;
-      else td.textContent=r[k];
-      tr.appendChild(td);
-    });
-    const tdDel=document.createElement('td');
-    const btnDel=document.createElement('button'); btnDel.className='btn small danger'; btnDel.textContent='Delete';
-    btnDel.addEventListener('click',()=>{sessionRecords.splice(idx,1);refreshTable();showToast('Deleted');});
-    tdDel.appendChild(btnDel); tr.appendChild(tdDel);
-    ui.tbody.appendChild(tr);
-  });
-  ui.count.textContent=`${sessionRecords.length} saved`;
-}
-
-async function enableSensors(){
-  try{
-    if(/iPad|iPhone|iPod/.test(navigator.userAgent)&&typeof DeviceMotionEvent!=='undefined'&&DeviceMotionEvent.requestPermission) await DeviceMotionEvent.requestPermission();
-    if(typeof DeviceOrientationEvent!=='undefined'&&DeviceOrientationEvent.requestPermission) await DeviceOrientationEvent.requestPermission();
-    ui.sensorStatus.textContent='Sensors: ready';
-    if(!listenerAdded){window.addEventListener('deviceorientation',onOrient,true);listenerAdded=true;}
-    showToast('Sensors enabled');
-  }catch{ui.sensorStatus.textContent='Sensors: blocked';showToast('Permission denied — use Manual Mode');}
-}
-
-function getAxisAngle(alpha,beta,gamma,plane){switch(plane){case'alpha':return((alpha+540)%360)-180;case'beta':return beta;case'gamma':return gamma;default:return 0;}}
-function onOrient(e){if(!running)return;const a=Number(e.alpha||0),b=Number(e.beta||0),g=Number(e.gamma||0);currentAngle=getAxisAngle(a,b,g,ui.plane.value)-zero;if(currentAngle>max)max=currentAngle;if(currentAngle<min)min=currentAngle;ui.angle.textContent=currentAngle.toFixed(1);ui.max.textContent=isFinite(max)?max.toFixed(1):'—';ui.min.textContent=isFinite(min)?min.toFixed(1):'—';}
-
-ui.btnEnable.addEventListener('click',enableSensors);
-ui.btnCalibrate.addEventListener('click',()=>{zero=currentAngle;ui.zero.textContent=zero.toFixed(1);showToast('Calibrated');});
-
-function startSession(){
-  running=true; sessionStart=Date.now();
-  ui.sensorStatus.textContent='Sensors: recording…';
-  sessionTimer=setInterval(()=>{ui.duration.textContent=`${Math.floor((Date.now()-sessionStart)/1000)}s`; saveSnapshot(false);},500);
-  showToast('Session started');
-}
-function stopSession(){
-  running=false; clearInterval(sessionTimer); ui.sensorStatus.textContent='Sensors: stopped'; showToast('Session stopped');
-}
-
-function saveSnapshot(manual=true){
-  const rec={
-    id:uuidv4(),
-    time:Date.now(),
-    joint:ui.joint.value,
-    side:ui.side.value,
-    plane:ui.plane.options[ui.plane.selectedIndex].text,
-    angle:currentAngle.toFixed(1),
-    min:isFinite(min)?min.toFixed(1):'—',
-    max:isFinite(max)?max.toFixed(1):'—',
-    notes:ui.notes.value.trim()
+  // UI elements
+  const ui = {
+    angle: document.getElementById('angle'),
+    min: document.getElementById('min'),
+    max: document.getElementById('max'),
+    zero: document.getElementById('zero'),
+    sensorStatus: document.getElementById('sensorStatus'),
+    btnEnable: document.getElementById('btnEnable'),
+    btnCalibrate: document.getElementById('btnCalibrate'),
+    btnResetMinMax: document.getElementById('btnResetMinMax'),
+    btnStartSession: document.getElementById('btnStartSession'),
+    btnStopSession: document.getElementById('btnStopSession'),
+    btnSave: document.getElementById('btnSave'),
+    btnExport: document.getElementById('btnExport'),
+    joint: document.getElementById('joint'),
+    plane: document.getElementById('plane'),
+    side: document.getElementById('side'),
+    notes: document.getElementById('notes'),
+    manualAngle: document.getElementById('manualAngle'),
+    btnApplyManual: document.getElementById('btnApplyManual'),
+    sparkline: document.getElementById('sparkline'),
+    sparkText: document.getElementById('sparkText'),
+    sparkFlash: document.getElementById('sparkFlash'),
+    autoInterval: document.getElementById('autoInterval'),
+    countdown: document.getElementById('countdown'),
+    toast: document.getElementById('toast')
   };
-  sessionRecords.unshift(rec); refreshTable(); if(manual) showToast('Snapshot saved');
-}
 
-ui.btnStart.addEventListener('click',startSession);
-ui.btnStop.addEventListener('click',stopSession);
-ui.btnSave.addEventListener('click',()=>saveSnapshot(true));
+  // State
+  let running=false, zero=0, min=Infinity, max=-Infinity, currentAngle=0;
+  let listenerAdded=false, smoothedAngle=0, smoothing=0.18, lastTs=0;
+  let sessionRecording=false, sessionSamples=[], countdownTimer=null, nextSaveDeadline=null;
+  const KEY='rom-tracker-records-v1';
 
-ui.btnExport.addEventListener('click',()=>{
-  if(!sessionRecords.length){showToast('No records'); return;}
-  const lines=['time_iso,joint,side,plane,angle_deg,min_deg,max_deg,notes'];
-  sessionRecords.forEach(r=>lines.push([new Date(r.time).toISOString(),r.joint,r.side,`"${r.plane}"`,r.angle,r.min,r.max,`"${(r.notes||'').replace(/"/g,'""')}"`].join(',')));
-  const bom='﻿'; const blob=new Blob([bom+lines.join('\n')],{type:'text/csv;charset=utf-8;'});
-  const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='rom-session.csv'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url); showToast('Exported CSV');
-});
+  // Storage
+  function loadRecords(){ try{ return JSON.parse(localStorage.getItem(KEY)||'[]'); } catch{ return []; } }
+  function saveRecords(arr){ localStorage.setItem(KEY, JSON.stringify(arr)); }
+  function fmtTime(ts){ return new Date(ts).toLocaleString(); }
+  function showToast(txt,ms=1200){ ui.toast.textContent=txt; ui.toast.style.display='block'; clearTimeout(ui.toast._t); ui.toast._t=setTimeout(()=>ui.toast.style.display='none',ms); }
+  function uuidv4(){ return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.random()*16|0,v=c==='x'?r:(r&0x3|0x8);return v.toString(16);}); }
 
-ui.btnApplyManual.addEventListener('click',()=>{
-  const v=parseFloat(ui.manualAngle.value.replace(',','.')); if(isNaN(v)){alert('Enter valid number'); return;}
-  currentAngle=v; if(v>max)max=v;if(v<min)min=v; ui.angle.textContent=currentAngle.toFixed(1); ui.max.textContent=isFinite(max)?max.toFixed(1):'—'; ui.min.textContent=isFinite(min)?min.toFixed(1):'—';
-});
+  // Sensor
+  function isIOS(){ return /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1); }
+  async function enableSensors(){
+    try{
+      if(isIOS() && DeviceMotionEvent?.requestPermission){ const res = await DeviceMotionEvent.requestPermission(); if(res!=='granted') throw new Error('Denied'); }
+      ui.sensorStatus?.textContent='Sensors: ready';
+      if(!listenerAdded){ window.addEventListener('deviceorientation', onOrient,true); listenerAdded=true; }
+      showToast('Sensors enabled');
+    }catch{ showToast('Permission denied — use Manual Mode'); }
+  }
+  function getAxisAngle(a,b,g,plane){switch(plane){case 'alpha':return((a+540)%360)-180;case 'beta':return b;case 'gamma':return g;}}
+  function onOrient(e){
+    if(!running) return;
+    const now=performance.now(), capMs=1000;
+    if(now-lastTs<capMs) return;
+    lastTs=now;
+    const raw=getAxisAngle(e.alpha||0,e.beta||0,e.gamma||0,ui.plane.value)-zero;
+    let wrapped=((raw+180)%360)-180;
+    const jump=Math.abs(wrapped-smoothedAngle); if(jump>120) return;
+    smoothedAngle += smoothing*(wrapped-smoothedAngle);
+    currentAngle=smoothedAngle;
+    if(currentAngle>max) max=currentAngle;
+    if(currentAngle<min) min=currentAngle;
+    ui.angle.textContent=currentAngle.toFixed(1);
+    ui.max.textContent=isFinite(max)?max.toFixed(1):'—';
+    ui.min.textContent=isFinite(min)?min.toFixed(1):'—';
+    if(sessionRecording){ sessionSamples.push({t:Date.now(),angle:Number(currentAngle.toFixed(2))}); updateSparkline(); }
+  }
+
+  // Calibration
+  ui.btnCalibrate.addEventListener('click',()=>calibrateHold());
+  async function calibrateHold(duration=1200){
+    ui.sensorStatus.textContent='Calibrating...';
+    const samples=[];
+    const handler=(e)=>{ samples.push(getAxisAngle(e.alpha||0,e.beta||0,e.gamma||0,ui.plane.value)); };
+    window.addEventListener('deviceorientation',handler,true);
+    await new Promise(r=>setTimeout(r,duration));
+    window.removeEventListener('deviceorientation',handler,true);
+    if(!samples.length){ zero=0; ui.zero.textContent=zero.toFixed(1); showToast('Calibration failed'); return; }
+    zero=samples.reduce((s,v)=>s+v,0)/samples.length;
+    ui.zero.textContent=zero.toFixed(1);
+    localStorage.setItem(`zero_${ui.joint.value}_${ui.side.value}_${ui.plane.value}`, JSON.stringify(zero));
+    showToast('Calibrated');
+  }
+  function loadContextZero(){
+    const z=localStorage.getItem(`zero_${ui.joint.value}_${ui.side.value}_${ui.plane.value}`);
+    if(z!==null){ zero=Number(JSON.parse(z)); ui.zero.textContent=zero.toFixed(1); } else { ui.zero.textContent='—'; }
+  }
+  ui.joint.addEventListener('change',loadContextZero);
+  ui.side.addEventListener('change',loadContextZero);
+  ui.plane.addEventListener('change',loadContextZero);
+  loadContextZero();
+
+  ui.btnEnable.addEventListener('click',enableSensors);
+  ui.btnResetMinMax.addEventListener('click',()=>{ min=Infinity; max=-Infinity; ui.min.textContent='—'; ui.max.textContent='—'; showToast('Min/Max reset'); });
+
+  // Save record
+  function saveCurrentRecord(auto=false){
+    const rec={id:uuidv4(),time:Date.now(),joint:ui.joint.value,side:ui.side.value,plane:ui.plane.options[ui.plane.selectedIndex].text,
+      angle:isFinite(currentAngle)?Number(currentAngle.toFixed(2)):null,min:isFinite(min)?Number(min.toFixed(2)):null,
+      max:isFinite(max)?Number(max.toFixed(2)):null,zero:isFinite(zero)?Number(zero.toFixed(2)):null,notes:ui.notes.value.trim(),
+      session:sessionRecording?sessionSamples.slice():null};
+    const arr=loadRecords(); arr.unshift(rec); saveRecords(arr); showToast(auto?'Auto-saved ✓':'Saved',900); updateSparkline();
+  }
+
+  ui.btnSave.addEventListener('click',()=>saveCurrentRecord(false));
+  ui.btnExport.addEventListener('click',()=>{
+    const data=loadRecords(); if(!data.length){ showToast('No records'); return; }
+    const header=['time_iso','joint','side','plane','angle_deg','min_deg','max_deg','zero_ref_deg','notes','session_rows'];
+    const lines=[header.join(',')];
+    data.forEach(r=>{
+      const row=[new Date(r.time).toISOString(),r.joint,r.side,`"${r.plane}"`,
+        typeof r.angle==='number'?r.angle.toFixed(2):'',
+        typeof r.min==='number'?r.min.toFixed(2):'',
+        typeof r.max==='number'?r.max.toFixed(2):'',
+        typeof r.zero==='number'?r.zero.toFixed(2):'',
+        `"${(r.notes||'').replace(/"/g,'""')}"`,
+        r.session?r.session.length:''];
+      lines.push(row.join(','));
+    });
+    const blob=new Blob(['\uFEFF'+lines.join('\n')],{type:'text/csv;charset=utf-8;'});
+    const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='rom-tracker.csv'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+    showToast('Exported');
+  });
+
+  // Manual
+  ui.btnApplyManual.addEventListener('click',()=>{
+    const v=parseFloat(ui.manualAngle.value.replace(',','.'));
+    if(isNaN(v)){ alert('Enter valid number'); return; }
+    currentAngle=v; if(v>max) max=v; if(v<min) min=v;
+    ui.angle.textContent=currentAngle.toFixed(1);
+    ui.max.textContent=isFinite(max)?max.toFixed(1):'—';
+    ui.min.textContent=isFinite(min)?min.toFixed(1):'—';
+  });
+
+  // Session recording
+  function startAutoCountdownIfNeeded(){ stopAutoCountdown(); const sec=Number(ui.autoInterval.value||0); if(sec>0 && sessionRecording){
+    nextSaveDeadline=Date.now()+sec*1000;
+    countdownTimer=setInterval(()=>{
+      const remMs=nextSaveDeadline-Date.now(), rem=Math.ceil(remMs/1000);
+      ui.countdown.textContent=`Next save in ${rem}s`; ui.sparkText.textContent=`Recording — ${rem}s`;
+      if(remMs<=0){ saveCurrentRecord(true); nextSaveDeadline=Date.now()+sec*1000; }
+    },250); ui.sparkline.classList.add('flashging');
+  }}
+  function stopAutoCountdown(){ if(countdownTimer){ clearInterval(countdownTimer); countdownTimer=null; }
+    ui.countdown.textContent=''; ui.sparkline.classList.remove('flashging'); }
+  ui.btnStartSession.addEventListener('click',()=>{ sessionRecording=true; sessionSamples=[]; showToast('Session started'); startAutoCountdownIfNeeded(); });
+  ui.btnStopSession.addEventListener('click',()=>{ sessionRecording=false; showToast('Session stopped'); stopAutoCountdown(); });
+
+  // Sparkline
+  function updateSparkline(){
+    const recent=sessionSamples.slice(-30).map(s=>s.angle);
+    ui.sparkText.textContent=recent.length?`Session: ${recent[recent.length-1].toFixed(1)}°`:'No session yet';
+    ui.sparkFlash.style.opacity=recent.length?1:0;
+  }
+
+  // Start
+  running=true;
 })();
 </script>
 </body>
