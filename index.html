@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
 <title>ROM Tracker – YouMOVE</title>
 <style>
   :root { --bg:#0b1016; --card:#121820; --muted:#8aa0b2; --text:#eaf2f8; --accent:#50c878; --danger:#ff6b6b; --warn:#ffc857; --flash:#50c878; }
@@ -13,32 +13,26 @@
   h1{font-size:22px;margin:0}
   .card{background:var(--card);border:1px solid #1d2732;border-radius:18px;padding:14px;margin:10px 0;box-shadow:0 6px 24px rgba(0,0,0,.28)}
   label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px}
-  select, input[type="text"], button{width:100%;padding:12px 12px;border-radius:12px;border:1px solid #203040;background:#0b1118;color:var(--text);font-size:15px}
+  select, input[type="text"], button, input[type="number"]{width:100%;padding:12px 12px;border-radius:12px;border:1px solid #203040;background:#0b1118;color:var(--text);font-size:15px}
   .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
   .btn{cursor:pointer;transition:transform .02s ease,opacity .2s}
   .btn:active{transform:scale(.98)}
   .btn.primary{background:var(--accent);color:#072d19;border-color:#0d5b3a;font-weight:700}
-  .btn.warn{background:var(--warn);color:#432;border-color:#a77}
-  .btn.danger{background:var(--danger);color:#320a0a;border-color:#7a1e1e}
+  .btn.warn{background:var(--warn);color:#432; border-color:#a77}
   .btn.ghost{background:#0a121a;border-color:#1d2a38}
-  .kpi{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
+  .kpi{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px}
   .tile{background:#0a121a;border:1px solid #1d2a38;border-radius:16px;padding:14px;text-align:center}
   .tile h3{margin:4px 0 0;font-size:24px}
   .tile span{font-size:12px;color:var(--muted)}
   .muted{color:var(--muted)}
-  table{width:100%;border-collapse:collapse}
-  th, td{font-size:13px;border-bottom:1px solid #203040;padding:10px 8px;text-align:left;vertical-align:top}
-  th{color:#a9bfd2;font-weight:600}
-  .pill{display:inline-block;padding:4px 8px;border-radius:999px;background:#0e1822;border:1px solid #1e2d3e;font-size:12px}
-  .hint{font-size:12px;color:var(--muted);margin-top:8px}
-  canvas{background:#0a121a;border:1px solid #1d2a38;border-radius:12px;width:100%;height:100px}
+  .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:24px;background:#0f1b23;padding:10px 14px;border-radius:10px;border:1px solid #1f2f3a;box-shadow:0 6px 20px rgba(0,0,0,.4);display:none;z-index:999}
 </style>
 </head>
 <body>
 <div class="wrap">
   <header>
-    <h1>YouMOVE – Gelenkbewegung live,Cloudfrei und Private</h1>
-    <div class="row" style="gap:6px;flex-wrap:wrap">
+    <h1>YouMOVE – Deine Gelenkbewegung: privat, souverän und vollkommen cloudfrei </h1>
+    <div class="flex">
       <button id="btnEnable" class="btn ghost">Enable Sensors</button>
       <button id="btnCalibrate" class="btn ghost">Set Zero</button>
       <button id="btnResetMinMax" class="btn ghost">Reset Min/Max</button>
@@ -56,6 +50,7 @@
           <option>Hip</option>
           <option>Knee</option>
           <option>Ankle</option>
+          <option>Rest</option>
         </select>
       </div>
       <div>
@@ -67,7 +62,7 @@
         </select>
       </div>
     </div>
-    <div class="row" style="margin-top:8px;">
+    <div class="row">
       <div>
         <label>Side</label>
         <select id="side">
@@ -77,8 +72,8 @@
         </select>
       </div>
       <div>
-        <label>Notes</label>
-        <input id="notes" type="text" placeholder="Optional notes">
+        <label>Notes (optional)</label>
+        <input id="notes" type="text" placeholder="e.g., post-op wk 2">
       </div>
     </div>
   </div>
@@ -89,19 +84,15 @@
       <div class="tile"><span>Max (°)</span><h3 id="max">—</h3></div>
       <div class="tile"><span>Min (°)</span><h3 id="min">—</h3></div>
       <div class="tile"><span>Zero Ref (°)</span><h3 id="zero">—</h3></div>
+      <div class="tile"><span>Mean (°)</span><h3 id="mean">—</h3></div>
+      <div class="tile"><span>Joint / Rest</span><h3 id="jointRest">—</h3></div>
     </div>
-    <div class="row" style="margin-top:10px;gap:6px;flex-wrap:wrap;">
+    <div class="flex" style="margin-top:10px;">
       <button id="btnStart" class="btn primary">Start</button>
       <button id="btnStop" class="btn warn">Stop</button>
-      <button id="btnSave" class="btn">Save Record</button>
-      <button id="btnExport" class="btn">Export CSV</button>
-      <span class="pill" id="sensorStatus">Sensors: idle</span>
+      <button id="btnSave" class="btn">Save</button>
+      <span class="pill right" id="sensorStatus">Sensors: idle</span>
     </div>
-  </div>
-
-  <div class="card">
-    <strong>Session Live Chart</strong>
-    <canvas id="chart"></canvas>
   </div>
 
   <div class="card">
@@ -109,13 +100,15 @@
     <div class="row" style="margin-top:8px;">
       <div>
         <label>Set angle manually (°)</label>
-        <input id="manualAngle" type="text" placeholder="e.g., 90">
+        <input id="manualAngle" type="text" placeholder="e.g., 92.5">
       </div>
-      <div>
+      <div class="flex" style="align-items:flex-end">
         <button id="btnApplyManual" class="btn">Apply</button>
       </div>
     </div>
   </div>
+
+  <div class="toast" id="toast"></div>
 </div>
 
 <script>
@@ -125,6 +118,8 @@
     min: document.getElementById('min'),
     max: document.getElementById('max'),
     zero: document.getElementById('zero'),
+    mean: document.getElementById('mean'),
+    jointRest: document.getElementById('jointRest'),
     sensorStatus: document.getElementById('sensorStatus'),
     btnEnable: document.getElementById('btnEnable'),
     btnCalibrate: document.getElementById('btnCalibrate'),
@@ -132,142 +127,82 @@
     btnStart: document.getElementById('btnStart'),
     btnStop: document.getElementById('btnStop'),
     btnSave: document.getElementById('btnSave'),
-    btnExport: document.getElementById('btnExport'),
     joint: document.getElementById('joint'),
     plane: document.getElementById('plane'),
     side: document.getElementById('side'),
     notes: document.getElementById('notes'),
     manualAngle: document.getElementById('manualAngle'),
     btnApplyManual: document.getElementById('btnApplyManual'),
-    chart: document.getElementById('chart').getContext('2d')
+    toast: document.getElementById('toast')
   };
 
-  let running = false;
-  let zero = 0, min = Infinity, max = -Infinity, currentAngle = 0;
-  let listenerAdded = false;
+  let running = false, zero = 0, min = Infinity, max = -Infinity, currentAngle = 0, listenerAdded=false;
   let sessionSamples = [];
 
-  const KEY = 'rom-tracker-records-v1';
-  function loadRecords(){ try { return JSON.parse(localStorage.getItem(KEY)||'[]'); } catch { return []; } }
-  function saveRecords(arr){ localStorage.setItem(KEY,JSON.stringify(arr)); }
+  function showToast(txt, ms=1200){ ui.toast.textContent=txt; ui.toast.style.display='block'; setTimeout(()=>ui.toast.style.display='none', ms); }
 
-  function showToast(msg){ ui.sensorStatus.textContent = msg; }
+  function isIOS(){ return /iPad|iPhone|iPod/.test(navigator.userAgent); }
+
+  async function enableSensors(){
+    try{
+      if(isIOS() && typeof DeviceMotionEvent.requestPermission==='function'){
+        const res = await DeviceMotionEvent.requestPermission();
+        if(res!=='granted') throw new Error('Permission denied');
+      }
+      if(!listenerAdded){
+        window.addEventListener('deviceorientation', onOrient, true);
+        listenerAdded=true;
+      }
+      ui.sensorStatus.textContent='Sensors: ready';
+      showToast('Sensors enabled');
+    }catch{
+      ui.sensorStatus.textContent='Sensors: blocked';
+      showToast('Permission denied, use manual mode');
+    }
+  }
 
   function getAxisAngle(alpha,beta,gamma,plane){
     switch(plane){
       case 'alpha': return ((alpha+540)%360)-180;
       case 'beta': return beta;
       case 'gamma': return gamma;
+      default: return 0;
     }
-    return 0;
   }
 
   function onOrient(e){
     if(!running) return;
-    const a = e.alpha||0, b=e.beta||0, g=e.gamma||0;
+    const a=e.alpha||0, b=e.beta||0, g=e.gamma||0;
     const raw = getAxisAngle(a,b,g,ui.plane.value)-zero;
-    let wrapped = ((raw+180)%360)-180;
-    currentAngle = wrapped;
+    currentAngle = ((raw+180)%360)-180;
     if(currentAngle>max) max=currentAngle;
     if(currentAngle<min) min=currentAngle;
-    ui.angle.textContent=currentAngle.toFixed(1);
-    ui.max.textContent=isFinite(max)?max.toFixed(1):'—';
-    ui.min.textContent=isFinite(min)?min.toFixed(1):'—';
     sessionSamples.push(currentAngle);
-    drawChart();
+    updateKPI();
   }
 
-  function drawChart(){
-    const ctx = ui.chart;
-    ctx.clearRect(0,0,ctx.canvas.width,ctx.canvas.height);
-    if(!sessionSamples.length) return;
-    ctx.beginPath();
-    const w=ctx.canvas.width, h=ctx.canvas.height;
-    const len=sessionSamples.length;
-    const minVal=Math.min(...sessionSamples), maxVal=Math.max(...sessionSamples);
-    sessionSamples.slice(-w).forEach((v,i)=>{
-      const y=h-( (v-minVal)/(maxVal-minVal||1) * h );
-      if(i===0) ctx.moveTo(i,y); else ctx.lineTo(i,y);
-    });
-    ctx.strokeStyle='#50c878';
-    ctx.lineWidth=2;
-    ctx.stroke();
-  }
-
-  async function enableSensors(){
-    try{
-      if(typeof DeviceMotionEvent!=='undefined' && typeof DeviceMotionEvent.requestPermission==='function'){
-        const res=await DeviceMotionEvent.requestPermission();
-        if(res!=='granted') throw new Error('denied');
-      }
-      if(!listenerAdded){
-        window.addEventListener('deviceorientation', onOrient);
-        listenerAdded=true;
-      }
-      showToast('Sensors: ready');
-    }catch(e){ showToast('Sensors blocked — use manual'); }
+  function updateKPI(){
+    ui.angle.textContent = currentAngle.toFixed(1);
+    ui.min.textContent = isFinite(min)?min.toFixed(1):'—';
+    ui.max.textContent = isFinite(max)?max.toFixed(1):'—';
+    ui.zero.textContent = zero.toFixed(1);
+    const mean = sessionSamples.length ? sessionSamples.reduce((a,b)=>a+b,0)/sessionSamples.length : 0;
+    ui.mean.textContent = sessionSamples.length?mean.toFixed(1):'—';
+    ui.jointRest.textContent = ui.joint.value.includes('Rest') ? 'Rest':'Active';
   }
 
   ui.btnEnable.addEventListener('click', enableSensors);
-
-  ui.btnCalibrate.addEventListener('click', async ()=>{
-    if(!listenerAdded){ window.addEventListener('deviceorientation', onOrient); listenerAdded=true; }
-    const samples=[];
-    const handler=e=>samples.push(getAxisAngle(e.alpha||0,e.beta||0,e.gamma||0,ui.plane.value));
-    window.addEventListener('deviceorientation', handler);
-    await new Promise(r=>setTimeout(r,1200));
-    window.removeEventListener('deviceorientation', handler);
-    zero=samples.length? samples.reduce((s,v)=>s+v,0)/samples.length : 0;
-    ui.zero.textContent=zero.toFixed(1);
-    showToast('Calibrated');
-  });
-
-  ui.btnResetMinMax.addEventListener('click', ()=>{
-    min=Infinity; max=-Infinity; ui.min.textContent='—'; ui.max.textContent='—'; showToast('Min/Max reset');
-  });
-
   ui.btnStart.addEventListener('click', ()=>{ running=true; showToast('Measuring…'); });
   ui.btnStop.addEventListener('click', ()=>{ running=false; showToast('Stopped'); });
-
+  ui.btnResetMinMax.addEventListener('click', ()=>{ min=Infinity; max=-Infinity; updateKPI(); showToast('Min/Max reset'); });
+  ui.btnCalibrate.addEventListener('click', ()=>{ zero=currentAngle; updateKPI(); showToast('Zero set'); });
   ui.btnApplyManual.addEventListener('click', ()=>{
     const v=parseFloat(ui.manualAngle.value.replace(',','.'));
-    if(isNaN(v)) return alert('Enter valid number');
-    currentAngle=v;
-    if(v>max) max=v;
-    if(v<min) min=v;
-    ui.angle.textContent=currentAngle.toFixed(1);
-    ui.max.textContent=max.toFixed(1);
-    ui.min.textContent=min.toFixed(1);
-    sessionSamples.push(v);
-    drawChart();
+    if(isNaN(v)){ return alert('Enter valid number'); }
+    currentAngle=v; if(v>max) max=v; if(v<min) min=v;
+    sessionSamples.push(v); updateKPI();
   });
-
-  ui.btnSave.addEventListener('click', ()=>{
-    const rec={
-      time:Date.now(), joint:ui.joint.value, side:ui.side.value,
-      plane:ui.plane.value, angle:currentAngle, min:isFinite(min)?min:null,
-      max:isFinite(max)?max:null, zero:isFinite(zero)?zero:null,
-      notes:ui.notes.value.trim(), session:sessionSamples.slice()
-    };
-    const arr=loadRecords(); arr.unshift(rec); saveRecords(arr); showToast('Saved');
-  });
-
-  ui.btnExport.addEventListener('click', ()=>{
-    const data=loadRecords();
-    if(!data.length){ showToast('No records'); return; }
-    const header=['time_iso','joint','side','plane','angle_deg','min_deg','max_deg','zero_deg','notes','session_rows'];
-    const lines=[header.join(',')];
-    data.forEach(r=>{
-      const row=[new Date(r.time).toISOString(),r.joint,r.side,r.plane,r.angle,r.min,r.max,r.zero,`"${(r.notes||'').replace(/"/g,'""')}"`,r.session?r.session.length:''];
-      lines.push(row.join(','));
-    });
-    const blob=new Blob(['\uFEFF'+lines.join('\n')],{type:'text/csv;charset=utf-8;'});
-    const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='rom-tracker.csv'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
-    showToast('Exported');
-  });
-
 })();
 </script>
 </body>
 </html>
-
