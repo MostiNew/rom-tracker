@@ -1,184 +1,258 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MeineMOVE – Gelenkbewegung: privat, offline, cloudfrei</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>YouMOVE ROM Tracker – Full Session</title>
 <style>
-:root { --bg:#0b1016; --card:#121820; --muted:#8aa0b2; --text:#eaf2f8; --accent:#50c878; --danger:#ff6b6b; --warn:#ffc857; }
-body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:linear-gradient(180deg,#0b1016,#0e141c);color:var(--text);}
-.wrap{max-width:960px;margin:0 auto;padding:16px;}
-h1{font-size:22px;margin:0 0 16px;}
-.card{background:var(--card);border-radius:18px;padding:16px;margin-bottom:14px;box-shadow:0 6px 24px rgba(0,0,0,.28);}
-label{display:block;margin:8px 0 4px;color:var(--muted);}
-input, select, button{width:100%;padding:10px;border-radius:10px;border:1px solid #203040;background:#0b1118;color:var(--text);}
-button{cursor:pointer;}
-button.primary{background:var(--accent);color:#072d19;font-weight:700;}
-button.danger{background:var(--danger);color:#320a0a;}
-.flex{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
+:root {
+  --bg:#0b1016; --card:#121820; --muted:#8aa0b2; --text:#eaf2f8; --accent:#50c878; --danger:#ff6b6b; --warn:#ffc857;
+}
+*{box-sizing:border-box;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;}
+body{margin:0;background:linear-gradient(180deg,#0b1016,#0e141c);color:var(--text);}
+.wrap{max-width:960px;margin:0 auto;padding:16px 14px 40px;}
+header{display:flex;align-items:center;gap:12px;justify-content:space-between;margin:6px 0 14px;}
+h1{font-size:22px;margin:0;}
+.card{background:var(--card);border:1px solid #1d2732;border-radius:18px;padding:14px;margin:10px 0;box-shadow:0 6px 24px rgba(0,0,0,.28);}
+label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px;}
+select,input[type="text"],button,input[type="number"]{width:100%;padding:12px 12px;border-radius:12px;border:1px solid #203040;background:#0b1118;color:var(--text);font-size:15px;}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.kpi{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;}
+.tile{background:#0a121a;border:1px solid #1e2d3e;border-radius:16px;padding:14px;text-align:center;}
+.tile h3{margin:4px 0 0;font-size:24px;}
+.tile span{font-size:12px;color:var(--muted);}
+.flex{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
 .right{margin-left:auto;}
-.hint{font-size:12px;color:var(--muted);}
-.toast{position:fixed;left:50%;bottom:20px;padding:10px 14px;background:#0f1b23;border-radius:10px;transform:translateX(-50%);display:none;z-index:999;}
-table{width:100%;border-collapse:collapse;margin-top:8px;}
-th,td{border:1px solid #203040;padding:4px;text-align:center;}
-th{background:#121820;}
+.small{font-size:12px;}
+.separator{height:1px;background:#203040;margin:10px 0;border-radius:1px;}
+button:focus{outline:3px solid rgba(80,200,120,0.18);outline-offset:2px;}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:24px;background:#0f1b23;padding:10px 14px;border-radius:10px;border:1px solid #1f2f3a;box-shadow:0 6px 20px rgba(0,0,0,.4);display:none;z-index:999;}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <h1>MeineMOVE – Gelenkbewegung: privat, offline und cloudfrei</h1>
+<header>
+  <h1>YouMOVE – ROM Full Session</h1>
+  <div class="flex">
+    <button id="btnEnable" class="btn ghost">Enable Sensors</button>
+    <button id="btnCalibrate" class="btn ghost">Set Zero</button>
+  </div>
+</header>
 
-  <div class="card">
-    <strong>Sensors & Joint Control</strong>
-    <div class="flex">
-      <button id="btnEnable" class="primary">Enable Sensors</button>
-      <button id="btnSetZero">Set Zero</button>
+<div class="card">
+  <div class="row">
+    <div>
+      <label>Joint</label>
+      <select id="joint">
+        <option>Shoulder</option>
+        <option>Elbow</option>
+        <option>Wrist</option>
+        <option>Hip</option>
+        <option>Knee</option>
+        <option>Ankle</option>
+        <option>Cervical Spine</option>
+        <option>Lumbar Spine</option>
+        <option>Custom</option>
+      </select>
     </div>
-    <label>Joint / Movement</label>
-    <select id="jointSelect">
-      <option>Shoulder</option>
-      <option>Elbow</option>
-      <option>Knee</option>
-    </select>
-    <div class="flex">
-      <div>Angle (°): <span id="angleDisplay">0.0</span></div>
-      <div>Max (°): <span id="maxDisplay">0.0</span></div>
-      <div>Min (°): <span id="minDisplay">0.0</span></div>
+    <div>
+      <label>Plane / Movement</label>
+      <select id="plane">
+        <option value="beta">Flexion/Extension (β)</option>
+        <option value="gamma">Abduction/Adduction (γ)</option>
+        <option value="alpha">Rotation (α)</option>
+      </select>
     </div>
   </div>
-
-  <div class="card">
-    <strong>Continuous Capture Mode</strong>
-    <label>Auto-Record Interval (seconds)</label>
-    <input type="number" id="autoInterval" min="1" value="5">
-    <div class="flex">
-      <button id="btnStart" class="primary">Start Session</button>
-      <button id="btnStop" class="danger">Stop Session</button>
+  <div class="row">
+    <div>
+      <label>Side</label>
+      <select id="side">
+        <option>Right</option>
+        <option>Left</option>
+        <option>Midline</option>
+      </select>
+    </div>
+    <div>
+      <label>Notes</label>
+      <input id="notes" type="text" placeholder="e.g., post-op wk2, pain at end-range">
     </div>
   </div>
+</div>
 
-  <div class="card">
-    <strong>Export & Copy Records</strong>
-    <div class="flex">
-      <button id="btnExport">Export CSV</button>
-      <button id="btnCopy" class="primary">Copy to Clipboard</button>
+<div class="card">
+  <div class="kpi">
+    <div class="tile"><span>Angle (°)</span><h3 id="angle">—</h3></div>
+    <div class="tile"><span>Max (°)</span><h3 id="max">—</h3></div>
+    <div class="tile"><span>Min (°)</span><h3 id="min">—</h3></div>
+    <div class="tile"><span>Zero Ref (°)</span><h3 id="zero">—</h3></div>
+    <div class="tile"><span>Duration</span><h3 id="duration">0s</h3></div>
+  </div>
+  <div class="flex" style="margin-top:10px;">
+    <button id="btnStart" class="btn primary">Start Session</button>
+    <button id="btnStop" class="btn warn">Stop Session</button>
+    <button id="btnSave" class="btn">Save Snapshot</button>
+    <button id="btnExport" class="btn">Export CSV</button>
+    <span class="pill right" id="sensorStatus">Sensors: idle</span>
+  </div>
+</div>
+
+<div class="card">
+  <strong>Manual Mode</strong>
+  <div class="row" style="margin-top:8px;">
+    <div>
+      <label>Set angle manually (°)</label>
+      <input id="manualAngle" type="text" placeholder="e.g., 92.5">
     </div>
-    <div class="hint">Copy all records in CSV format to clipboard.</div>
-    <table id="recordsTable">
-      <thead><tr><th>Time</th><th>Joint</th><th>Angle°</th></tr></thead>
-      <tbody></tbody>
+    <div class="flex" style="align-items:flex-end">
+      <button id="btnApplyManual" class="btn">Apply</button>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <strong>Session Records</strong>
+  <span class="small muted right" id="count">0 saved</span>
+  <div class="separator"></div>
+  <div style="overflow:auto">
+    <table id="table">
+      <thead>
+        <tr>
+          <th>Time</th>
+          <th>Joint/Side</th>
+          <th>Plane</th>
+          <th>Angle°</th>
+          <th>Min°</th>
+          <th>Max°</th>
+          <th>Notes</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
     </table>
   </div>
+</div>
 
-  <p class="hint">
-    Disclaimer: Screening, exercise guidance, and documentation support. Does not replace clinical judgment.<br>
-    Contact: Moustafa Mohammed Elsayed Ali | <a href="mailto:mostischmidbauer@web.de">mostischmidbauer@web.de</a>
-  </p>
+<p class="muted small" style="margin-top:12px;">
+Disclaimer: For <strong>screening, exercise guidance, documentation</strong> only. <br>
+<strong>Contact:</strong> Moustafa Ali | <a href="mailto:mostischmidbauer@web.de">Email</a>
+</p>
 </div>
 
 <div class="toast" id="toast"></div>
 
 <script>
-let zeroOffset = 0;
-let currentAngle = 0;
-let maxAngle = -Infinity;
-let minAngle = Infinity;
-let sessionInterval = null;
-let records = [];
+(function(){
+const ui = {
+  angle: document.getElementById('angle'),
+  min: document.getElementById('min'),
+  max: document.getElementById('max'),
+  zero: document.getElementById('zero'),
+  duration: document.getElementById('duration'),
+  sensorStatus: document.getElementById('sensorStatus'),
+  btnEnable: document.getElementById('btnEnable'),
+  btnCalibrate: document.getElementById('btnCalibrate'),
+  btnStart: document.getElementById('btnStart'),
+  btnStop: document.getElementById('btnStop'),
+  btnSave: document.getElementById('btnSave'),
+  btnExport: document.getElementById('btnExport'),
+  joint: document.getElementById('joint'),
+  plane: document.getElementById('plane'),
+  side: document.getElementById('side'),
+  notes: document.getElementById('notes'),
+  tbody: document.getElementById('tbody'),
+  count: document.getElementById('count'),
+  manualAngle: document.getElementById('manualAngle'),
+  btnApplyManual: document.getElementById('btnApplyManual')
+};
 
-// Load saved records
-if(localStorage.getItem('records')) records = JSON.parse(localStorage.getItem('records'));
-updateTable();
+let running=false, zero=0, min=Infinity, max=-Infinity, currentAngle=0, listenerAdded=false, sessionRecords=[], sessionStart=0, sessionTimer;
+const KEY='rom-tracker-session-v1';
 
-function showToast(msg){
-  const toast = document.getElementById('toast');
-  toast.innerText = msg;
-  toast.style.display = 'block';
-  setTimeout(()=>toast.style.display='none',2000);
-}
+function loadRecords(){try{return JSON.parse(localStorage.getItem(KEY)||'[]');}catch{return[];}}
+function saveRecords(arr){localStorage.setItem(KEY,JSON.stringify(arr));}
+function fmtTime(ts){return new Date(ts).toLocaleString();}
+function showToast(txt,ms=1200){ui.toast.textContent=txt;ui.toast.style.display='block';clearTimeout(ui.toast._t);ui.toast._t=setTimeout(()=>ui.toast.style.display='none',ms);}
+function uuidv4(){return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.random()*16|0,v=c==='x'?r:(r&0x3|0x8);return v.toString(16);});}
 
-// Sensor enable
-document.getElementById('btnEnable').addEventListener('click', async ()=>{
-  if(typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function'){
-    let perm = await DeviceMotionEvent.requestPermission();
-    if(perm !== 'granted'){ showToast('Permission denied'); return; }
-  }
-  window.addEventListener('deviceorientation', handleOrientation);
-  showToast('Sensors enabled');
-});
-
-// Set zero
-document.getElementById('btnSetZero').addEventListener('click', ()=>{
-  zeroOffset = currentAngle;
-  maxAngle = currentAngle;
-  minAngle = currentAngle;
-  showToast('Zero reference set');
-});
-
-// Handle orientation
-function handleOrientation(event){
-  // Pitch (beta) - front/back tilt
-  currentAngle = event.beta ? event.beta - zeroOffset : 0;
-  document.getElementById('angleDisplay').innerText = currentAngle.toFixed(1);
-
-  if(currentAngle > maxAngle) maxAngle = currentAngle;
-  if(currentAngle < minAngle) minAngle = currentAngle;
-  document.getElementById('maxDisplay').innerText = maxAngle.toFixed(1);
-  document.getElementById('minDisplay').innerText = minAngle.toFixed(1);
-}
-
-// Session control
-document.getElementById('btnStart').addEventListener('click', ()=>{
-  let intervalSec = parseFloat(document.getElementById('autoInterval').value);
-  if(isNaN(intervalSec) || intervalSec <=0){ showToast('Invalid interval'); return; }
-
-  if(sessionInterval) clearInterval(sessionInterval);
-  sessionInterval = setInterval(()=>{
-    let record = {
-      time: new Date().toLocaleString(),
-      joint: document.getElementById('jointSelect').value,
-      angle: currentAngle.toFixed(1)
-    };
-    records.push(record);
-    localStorage.setItem('records', JSON.stringify(records));
-    updateTable();
-  }, intervalSec*1000);
-
-  showToast('Session started');
-});
-
-document.getElementById('btnStop').addEventListener('click', ()=>{
-  if(sessionInterval){ clearInterval(sessionInterval); sessionInterval=null; showToast('Session stopped'); }
-});
-
-// Update table
-function updateTable(){
-  const tbody = document.querySelector('#recordsTable tbody');
-  tbody.innerHTML = '';
-  records.forEach(r=>{
-    let tr = document.createElement('tr');
-    tr.innerHTML = `<td>${r.time}</td><td>${r.joint}</td><td>${r.angle}</td>`;
-    tbody.appendChild(tr);
+function refreshTable(){
+  ui.tbody.innerHTML='';
+  sessionRecords.forEach((r,idx)=>{
+    const tr=document.createElement('tr');
+    ['time','joint','plane','angle','min','max','notes'].forEach(k=>{
+      const td=document.createElement('td');
+      if(k==='time') td.textContent=fmtTime(r.time);
+      else if(k==='joint') td.textContent=`${r.joint} (${r.side})`;
+      else td.textContent=r[k];
+      tr.appendChild(td);
+    });
+    const tdDel=document.createElement('td');
+    const btnDel=document.createElement('button'); btnDel.className='btn small danger'; btnDel.textContent='Delete';
+    btnDel.addEventListener('click',()=>{sessionRecords.splice(idx,1);refreshTable();showToast('Deleted');});
+    tdDel.appendChild(btnDel); tr.appendChild(tdDel);
+    ui.tbody.appendChild(tr);
   });
+  ui.count.textContent=`${sessionRecords.length} saved`;
 }
 
-// Export CSV
-document.getElementById('btnExport').addEventListener('click', ()=>{
-  if(records.length===0){ showToast('No records'); return; }
-  let csv = 'Time,Joint,Angle°\n' + records.map(r=>`${r.time},${r.joint},${r.angle}`).join('\n');
-  let blob = new Blob([csv],{type:'text/csv'});
-  let url = URL.createObjectURL(blob);
-  let a = document.createElement('a');
-  a.href = url; a.download='records.csv'; a.click();
-  URL.revokeObjectURL(url);
+async function enableSensors(){
+  try{
+    if(/iPad|iPhone|iPod/.test(navigator.userAgent)&&typeof DeviceMotionEvent!=='undefined'&&DeviceMotionEvent.requestPermission) await DeviceMotionEvent.requestPermission();
+    if(typeof DeviceOrientationEvent!=='undefined'&&DeviceOrientationEvent.requestPermission) await DeviceOrientationEvent.requestPermission();
+    ui.sensorStatus.textContent='Sensors: ready';
+    if(!listenerAdded){window.addEventListener('deviceorientation',onOrient,true);listenerAdded=true;}
+    showToast('Sensors enabled');
+  }catch{ui.sensorStatus.textContent='Sensors: blocked';showToast('Permission denied — use Manual Mode');}
+}
+
+function getAxisAngle(alpha,beta,gamma,plane){switch(plane){case'alpha':return((alpha+540)%360)-180;case'beta':return beta;case'gamma':return gamma;default:return 0;}}
+function onOrient(e){if(!running)return;const a=Number(e.alpha||0),b=Number(e.beta||0),g=Number(e.gamma||0);currentAngle=getAxisAngle(a,b,g,ui.plane.value)-zero;if(currentAngle>max)max=currentAngle;if(currentAngle<min)min=currentAngle;ui.angle.textContent=currentAngle.toFixed(1);ui.max.textContent=isFinite(max)?max.toFixed(1):'—';ui.min.textContent=isFinite(min)?min.toFixed(1):'—';}
+
+ui.btnEnable.addEventListener('click',enableSensors);
+ui.btnCalibrate.addEventListener('click',()=>{zero=currentAngle;ui.zero.textContent=zero.toFixed(1);showToast('Calibrated');});
+
+function startSession(){
+  running=true; sessionStart=Date.now();
+  ui.sensorStatus.textContent='Sensors: recording…';
+  sessionTimer=setInterval(()=>{ui.duration.textContent=`${Math.floor((Date.now()-sessionStart)/1000)}s`; saveSnapshot(false);},500);
+  showToast('Session started');
+}
+function stopSession(){
+  running=false; clearInterval(sessionTimer); ui.sensorStatus.textContent='Sensors: stopped'; showToast('Session stopped');
+}
+
+function saveSnapshot(manual=true){
+  const rec={
+    id:uuidv4(),
+    time:Date.now(),
+    joint:ui.joint.value,
+    side:ui.side.value,
+    plane:ui.plane.options[ui.plane.selectedIndex].text,
+    angle:currentAngle.toFixed(1),
+    min:isFinite(min)?min.toFixed(1):'—',
+    max:isFinite(max)?max.toFixed(1):'—',
+    notes:ui.notes.value.trim()
+  };
+  sessionRecords.unshift(rec); refreshTable(); if(manual) showToast('Snapshot saved');
+}
+
+ui.btnStart.addEventListener('click',startSession);
+ui.btnStop.addEventListener('click',stopSession);
+ui.btnSave.addEventListener('click',()=>saveSnapshot(true));
+
+ui.btnExport.addEventListener('click',()=>{
+  if(!sessionRecords.length){showToast('No records'); return;}
+  const lines=['time_iso,joint,side,plane,angle_deg,min_deg,max_deg,notes'];
+  sessionRecords.forEach(r=>lines.push([new Date(r.time).toISOString(),r.joint,r.side,`"${r.plane}"`,r.angle,r.min,r.max,`"${(r.notes||'').replace(/"/g,'""')}"`].join(',')));
+  const bom='﻿'; const blob=new Blob([bom+lines.join('\n')],{type:'text/csv;charset=utf-8;'});
+  const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='rom-session.csv'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url); showToast('Exported CSV');
 });
 
-// Copy to clipboard
-document.getElementById('btnCopy').addEventListener('click', ()=>{
-  if(records.length===0){ showToast('No records'); return; }
-  let csv = 'Time,Joint,Angle°\n' + records.map(r=>`${r.time},${r.joint},${r.angle}`).join('\n');
-  navigator.clipboard.writeText(csv).then(()=>showToast('Records copied'));
+ui.btnApplyManual.addEventListener('click',()=>{
+  const v=parseFloat(ui.manualAngle.value.replace(',','.')); if(isNaN(v)){alert('Enter valid number'); return;}
+  currentAngle=v; if(v>max)max=v;if(v<min)min=v; ui.angle.textContent=currentAngle.toFixed(1); ui.max.textContent=isFinite(max)?max.toFixed(1):'—'; ui.min.textContent=isFinite(min)?min.toFixed(1):'—';
 });
+})();
 </script>
 </body>
 </html>
