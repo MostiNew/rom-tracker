@@ -1,613 +1,184 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="de">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
-<title>ROM Tracker – MeineMOVE (Enhanced)</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MeineMOVE – Gelenkbewegung: privat, offline, cloudfrei</title>
 <style>
-  :root { --bg:#0b1016; --card:#121820; --muted:#8aa0b2; --text:#eaf2f8; --accent:#50c878; --danger:#ff6b6b; --warn:#ffc857; --flash:#50c878; }
-  *{box-sizing:border-box;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
-  body{margin:0;background:linear-gradient(180deg,#0b1016,#0e141c);color:var(--text)}
-  .wrap{max-width:960px;margin:0 auto;padding:16px 14px 40px}
-  header{display:flex;align-items:center;gap:12px;justify-content:space-between;margin:6px 0 14px}
-  h1{font-size:22px;margin:0}
-  .card{background:var(--card);border:1px solid #1d2732;border-radius:18px;padding:14px;margin:10px 0;box-shadow:0 6px 24px rgba(0,0,0,.28)}
-  label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px}
-  select, input[type="text"], button, input[type="number"]{width:100%;padding:12px 12px;border-radius:12px;border:1px solid #203040;background:#0b1118;color:var(--text);font-size:15px}
-  .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-  .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
-  .btn{cursor:pointer;transition:transform .02s ease,opacity .2s}
-  .btn:active{transform:scale(.98)}
-  .btn.primary{background:var(--accent);color:#072d19;border-color:#0d5b3a;font-weight:700}
-  .btn.warn{background:var(--warn);color:#432; border-color:#a77}
-  .btn.danger{background:var(--danger);color:#320a0a;border-color:#7a1e1e}
-  .btn.ghost{background:#0a121a;border-color:#1d2a38}
-  .kpi{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
-  .tile{background:#0a121a;border:1px solid #1d2a38;border-radius:16px;padding:14px;text-align:center}
-  .tile h3{margin:4px 0 0;font-size:24px}
-  .tile span{font-size:12px;color:var(--muted)}
-  .muted{color:var(--muted)}
-  table{width:100%;border-collapse:collapse}
-  th, td{font-size:13px;border-bottom:1px solid #203040;padding:10px 8px;text-align:left;vertical-align:top}
-  th{color:#a9bfd2;font-weight:600}
-  .pill{display:inline-block;padding:4px 8px;border-radius:999px;background:#0e1822;border:1px solid #1e2d3e;font-size:12px}
-  .hint{font-size:12px;color:var(--muted);margin-top:8px}
-  .flex{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-  .right{margin-left:auto}
-  .small{font-size:12px}
-  .separator{height:1px;background:#203040;margin:10px 0;border-radius:1px}
-  button:focus{ outline:3px solid rgba(80,200,120,0.18); outline-offset:2px; }
-  .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:24px;background:#0f1b23;padding:10px 14px;border-radius:10px;border:1px solid #1f2f3a;box-shadow:0 6px 20px rgba(0,0,0,.4);display:none;z-index:999}
-  .sparkline{height:48px;width:100%;border-radius:8px;background:linear-gradient(180deg,#081017,#071017);display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:12px;position:relative}
-  .sparkline .countdown{position:absolute;left:12px;font-size:12px;color:var(--muted)}
-  .sparkline .flash{position:absolute;right:12px;width:10px;height:10px;border-radius:50%;opacity:0;transition:opacity .18s ease, transform .18s ease}
-  .sparkline.flashging { box-shadow:0 0 18px rgba(80,200,120,0.12); }
-  .sparkline.flashging .flash { background:var(--flash); opacity:1; transform:scale(1.1); }
+:root { --bg:#0b1016; --card:#121820; --muted:#8aa0b2; --text:#eaf2f8; --accent:#50c878; --danger:#ff6b6b; --warn:#ffc857; }
+body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:linear-gradient(180deg,#0b1016,#0e141c);color:var(--text);}
+.wrap{max-width:960px;margin:0 auto;padding:16px;}
+h1{font-size:22px;margin:0 0 16px;}
+.card{background:var(--card);border-radius:18px;padding:16px;margin-bottom:14px;box-shadow:0 6px 24px rgba(0,0,0,.28);}
+label{display:block;margin:8px 0 4px;color:var(--muted);}
+input, select, button{width:100%;padding:10px;border-radius:10px;border:1px solid #203040;background:#0b1118;color:var(--text);}
+button{cursor:pointer;}
+button.primary{background:var(--accent);color:#072d19;font-weight:700;}
+button.danger{background:var(--danger);color:#320a0a;}
+.flex{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
+.right{margin-left:auto;}
+.hint{font-size:12px;color:var(--muted);}
+.toast{position:fixed;left:50%;bottom:20px;padding:10px 14px;background:#0f1b23;border-radius:10px;transform:translateX(-50%);display:none;z-index:999;}
+table{width:100%;border-collapse:collapse;margin-top:8px;}
+th,td{border:1px solid #203040;padding:4px;text-align:center;}
+th{background:#121820;}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <header>
-    <h1>YouMOVE – Deine Gelenkbewegung: privat, offline und vollkommen cloudfrei</h1>
+  <h1>MeineMOVE – Gelenkbewegung: privat, offline und cloudfrei</h1>
+
+  <div class="card">
+    <strong>Sensors & Joint Control</strong>
     <div class="flex">
-      <button id="btnEnable" class="btn ghost" aria-label="Enable sensors">Enable Sensors</button>
-      <button id="btnCalibrate" class="btn ghost" aria-label="Set zero (calibrate)">Set Zero</button>
-      <button id="btnResetMinMax" class="btn ghost" aria-label="Reset min and max">Reset Min/Max</button>
+      <button id="btnEnable" class="primary">Enable Sensors</button>
+      <button id="btnSetZero">Set Zero</button>
     </div>
-  </header>
-
-  <div class="card">
-    <div class="row">
-      <div>
-        <label>Joint</label>
-        <select id="joint" aria-label="Joint">
-          <option>Shoulder</option>
-          <option>Elbow</option>
-          <option>Wrist</option>
-          <option>Hip</option>
-          <option>Knee</option>
-          <option>Ankle</option>
-          <option>Cervical Spine</option>
-          <option>Lumbar Spine</option>
-          <option>Custom</option>
-        </select>
-      </div>
-      <div>
-        <label>Plane / Movement (suggested axis)</label>
-        <select id="plane" aria-label="Plane">
-          <option value="beta">Flexion/Extension (β / pitch)</option>
-          <option value="gamma">Abduction/Adduction (γ / roll)</option>
-          <option value="alpha">Rotation (α / yaw)*</option>
-        </select>
-      </div>
-    </div>
-    <div class="row">
-      <div>
-        <label>Side</label>
-        <select id="side" aria-label="Side">
-          <option>Right</option>
-          <option>Left</option>
-          <option>Midline</option>
-        </select>
-      </div>
-      <div>
-        <label>Notes (optional)</label>
-        <input id="notes" type="text" placeholder="e.g., post-op wk 2, pain at end-range" aria-label="Notes">
-      </div>
-    </div>
-    <div class="hint">* α/yaw may be less stable on some phones. For rotation, try placing phone on distal segment and keep devices away from magnets.</div>
-  </div>
-
-  <div class="card">
-    <div class="kpi">
-      <div class="tile">
-        <span>Angle (°)</span>
-        <h3 id="angle">—</h3>
-      </div>
-      <div class="tile">
-        <span>Max (°)</span>
-        <h3 id="max">—</h3>
-      </div>
-      <div class="tile">
-        <span>Min (°)</span>
-        <h3 id="min">—</h3>
-      </div>
-      <div class="tile">
-        <span>Zero Ref (°)</span>
-        <h3 id="zero">—</h3>
-      </div>
-    </div>
-    <div class="flex" style="margin-top:10px;">
-      <button id="btnStart" class="btn primary" aria-label="Start measurement">Start</button>
-      <button id="btnStop" class="btn warn" aria-label="Stop measurement">Stop</button>
-      <button id="btnSave" class="btn" aria-label="Save record">Save Record</button>
-      <button id="btnExport" class="btn" aria-label="Export all records">Export CSV</button>
-      <span class="pill right" id="sensorStatus" role="status" aria-live="polite">Sensors: idle</span>
-    </div>
-    <div class="hint">Place/strap the phone on the distal segment (e.g., forearm for elbow, tibia for knee). Tap <b>Set Zero</b> at neutral, then move through range.</div>
-  </div>
-
-  <div class="card">
+    <label>Joint / Movement</label>
+    <select id="jointSelect">
+      <option>Shoulder</option>
+      <option>Elbow</option>
+      <option>Knee</option>
+    </select>
     <div class="flex">
-      <strong>Records</strong>
-      <span class="small muted right" id="count">0 saved</span>
+      <div>Angle (°): <span id="angleDisplay">0.0</span></div>
+      <div>Max (°): <span id="maxDisplay">0.0</span></div>
+      <div>Min (°): <span id="minDisplay">0.0</span></div>
     </div>
-    <div class="separator"></div>
-    <div style="overflow:auto">
-      <table id="table" aria-label="Saved records">
-        <thead>
-          <tr>
-            <th>Time</th>
-            <th>Joint/Side</th>
-            <th>Plane</th>
-            <th>Angle°</th>
-            <th>Min°</th>
-            <th>Max°</th>
-            <th>Notes</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody id="tbody"></tbody>
-      </table>
-    </div>
-    <div class="hint">Data is stored locally on your device (LocalStorage). No cloud, no tracking.</div>
   </div>
 
   <div class="card">
-    <strong>Manual Mode (if sensors unavailable)</strong>
-    <div class="row" style="margin-top:8px;">
-      <div>
-        <label>Set angle manually (°)</label>
-        <input id="manualAngle" type="text" inputmode="decimal" placeholder="e.g., 92.5" aria-label="Manual angle">
-      </div>
-      <div class="flex" style="align-items:flex-end">
-        <button id="btnApplyManual" class="btn" aria-label="Apply manual angle">Apply</button>
-      </div>
+    <strong>Continuous Capture Mode</strong>
+    <label>Auto-Record Interval (seconds)</label>
+    <input type="number" id="autoInterval" min="1" value="5">
+    <div class="flex">
+      <button id="btnStart" class="primary">Start Session</button>
+      <button id="btnStop" class="danger">Stop Session</button>
     </div>
-    <div class="hint">Use this if Device Motion is blocked by the browser or policy. You can still log and export.</div>
   </div>
 
   <div class="card">
-    <strong>Session Recording</strong>
-    <div class="row" style="margin-top:8px;">
-      <div>
-        <label>Sample rate (Hz)</label>
-        <input id="sampleRate" type="number" min="1" max="60" value="25" step="1" aria-label="Sample rate">
-      </div>
-      <div>
-        <label>Auto-Record Interval</label>
-        <select id="autoInterval" aria-label="Auto record interval">
-          <option value="0" selected>No auto-record</option>
-          <option value="10">Every 10 sec</option>
-          <option value="20">Every 20 sec</option>
-          <option value="30">Every 30 sec</option>
-        </select>
-      </div>
-      <div class="flex" style="align-items:flex-end">
-        <button id="btnStartSession" class="btn primary" aria-label="Start session recording">Start Session</button>
-        <button id="btnStopSession" class="btn warn" aria-label="Stop session recording">Stop Session</button>
-      </div>
+    <strong>Export & Copy Records</strong>
+    <div class="flex">
+      <button id="btnExport">Export CSV</button>
+      <button id="btnCopy" class="primary">Copy to Clipboard</button>
     </div>
-    <div style="margin-top:8px;" class="sparkline" id="sparkline">
-      <span class="countdown" id="countdown"> </span>
-      <span id="sparkText">No session yet</span>
-      <span class="flash" id="sparkFlash"></span>
-    </div>
-    <div class="hint">Session mode captures continuous time-series (timestamp + angle) and saves it as a single record. Export session CSV separately. When Auto-Record interval is set, the app will save a snapshot at that interval while session is active.</div>
+    <div class="hint">Copy all records in CSV format to clipboard.</div>
+    <table id="recordsTable">
+      <thead><tr><th>Time</th><th>Joint</th><th>Angle°</th></tr></thead>
+      <tbody></tbody>
+    </table>
   </div>
 
- <p class="muted small" style="margin-top:12px;">
-  Disclaimer: This tool is intended for <strong>screening, exercise guidance, and documentation support</strong>. 
-  It <strong>does not replace clinical judgment</strong> or <strong>certified goniometry</strong> where required.<br><br>
-  <strong>Intellectual Property:</strong> The software, design, code, and all algorithms are the 
-  <strong>intellectual property of Moustafa Mohammed Elsayed Ali</strong> and are protected by copyright and patent law. 
-  Any reproduction, distribution, or commercial use without explicit written permission is prohibited.<br><br>
-  <strong>Contact:</strong> Moustafa Mohammed Elsayed Ali<br>
-  Adresse: Kronwittener Straße 1, 84367 Tann, Germany<br>
-  Telefon: +49 1522 5321568<br>
-  E-Mail: <a href="mailto:mostischmidbauer@web.de">mostischmidbauer@web.de</a> | 
-  <a href="mailto:dptmostafa@gmail.com">dptmostafa@gmail.com</a><br>
-  LinkedIn: <a href="https://www.linkedin.com/in/moustafa-ali-024471aa/" target="_blank">
-  https://www.linkedin.com/in/moustafa-ali-024471aa/</a>
-</p>
+  <p class="hint">
+    Disclaimer: Screening, exercise guidance, and documentation support. Does not replace clinical judgment.<br>
+    Contact: Moustafa Mohammed Elsayed Ali | <a href="mailto:mostischmidbauer@web.de">mostischmidbauer@web.de</a>
+  </p>
 </div>
 
 <div class="toast" id="toast"></div>
 
 <script>
-(function(){
-  const ui = {
-    angle: document.getElementById('angle'),
-    min: document.getElementById('min'),
-    max: document.getElementById('max'),
-    zero: document.getElementById('zero'),
-    sensorStatus: document.getElementById('sensorStatus'),
-    btnEnable: document.getElementById('btnEnable'),
-    btnCalibrate: document.getElementById('btnCalibrate'),
-    btnResetMinMax: document.getElementById('btnResetMinMax'),
-    btnStart: document.getElementById('btnStart'),
-    btnStop: document.getElementById('btnStop'),
-    btnSave: document.getElementById('btnSave'),
-    btnExport: document.getElementById('btnExport'),
-    joint: document.getElementById('joint'),
-    plane: document.getElementById('plane'),
-    side: document.getElementById('side'),
-    notes: document.getElementById('notes'),
-    tbody: document.getElementById('tbody'),
-    count: document.getElementById('count'),
-    manualAngle: document.getElementById('manualAngle'),
-    btnApplyManual: document.getElementById('btnApplyManual'),
-    sampleRate: document.getElementById('sampleRate'),
-    btnStartSession: document.getElementById('btnStartSession'),
-    btnStopSession: document.getElementById('btnStopSession'),
-    sparkline: document.getElementById('sparkline'),
-    sparkText: document.getElementById('sparkText'),
-    sparkFlash: document.getElementById('sparkFlash'),
-    toast: document.getElementById('toast'),
-    autoInterval: document.getElementById('autoInterval'),
-    countdown: document.getElementById('countdown')
-  };
+let zeroOffset = 0;
+let currentAngle = 0;
+let maxAngle = -Infinity;
+let minAngle = Infinity;
+let sessionInterval = null;
+let records = [];
 
-  // State
-  let running = false;
-  let zero = 0;
-  let min = Infinity;
-  let max = -Infinity;
-  let currentAngle = 0;
-  let listenerAdded = false;
-  let smoothedAngle = 0;
-  let smoothing = 0.18; // EMA alpha
-  let lastTs = 0;
-  let sessionRecording = false;
-  let sessionSamples = [];
-  let sessionTimer = null;
+// Load saved records
+if(localStorage.getItem('records')) records = JSON.parse(localStorage.getItem('records'));
+updateTable();
 
-  // Auto-record timer for interval snapshots
-  let autoRecordTimer = null;
-  // Countdown timer that updates UI and triggers saves
-  let countdownTimer = null;
-  let nextSaveDeadline = null;
+function showToast(msg){
+  const toast = document.getElementById('toast');
+  toast.innerText = msg;
+  toast.style.display = 'block';
+  setTimeout(()=>toast.style.display='none',2000);
+}
 
-  // Storage
-  const KEY = 'rom-tracker-records-v1';
-  function loadRecords(){
-    try { return JSON.parse(localStorage.getItem(KEY) || '[]'); } catch { return []; }
+// Sensor enable
+document.getElementById('btnEnable').addEventListener('click', async ()=>{
+  if(typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function'){
+    let perm = await DeviceMotionEvent.requestPermission();
+    if(perm !== 'granted'){ showToast('Permission denied'); return; }
   }
-  function saveRecords(arr){
-    localStorage.setItem(KEY, JSON.stringify(arr));
-  }
-  function fmtTime(ts){
-    const d = new Date(ts);
-    return d.toLocaleString();
-  }
-  function showToast(txt, ms=1200){
-    ui.toast.textContent = txt; ui.toast.style.display = 'block';
-    clearTimeout(ui.toast._t);
-    ui.toast._t = setTimeout(()=> ui.toast.style.display = 'none', ms);
-  }
+  window.addEventListener('deviceorientation', handleOrientation);
+  showToast('Sensors enabled');
+});
 
-  function uuidv4(){ return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c=>{ const r = Math.random()*16|0, v = c==='x'?r:(r&0x3|0x8); return v.toString(16); }); }
+// Set zero
+document.getElementById('btnSetZero').addEventListener('click', ()=>{
+  zeroOffset = currentAngle;
+  maxAngle = currentAngle;
+  minAngle = currentAngle;
+  showToast('Zero reference set');
+});
 
-  function refreshTable(){
-    const data = loadRecords();
-    ui.count.textContent = `${data.length} saved`;
-    ui.tbody.innerHTML = '';
-    data.forEach((r, idx)=>{
-      const tr = document.createElement('tr');
-      const tdTime = document.createElement('td'); tdTime.textContent = fmtTime(r.time);
-      const tdJs = document.createElement('td'); tdJs.textContent = `${r.joint} (${r.side})`;
-      const tdPlane = document.createElement('td'); tdPlane.textContent = r.plane;
-      const tdAngle = document.createElement('td'); tdAngle.textContent = typeof r.angle === 'number' ? r.angle.toFixed(1) : '—';
-      const tdMin = document.createElement('td'); tdMin.textContent = typeof r.min === 'number' ? r.min.toFixed(1) : '—';
-      const tdMax = document.createElement('td'); tdMax.textContent = typeof r.max === 'number' ? r.max.toFixed(1) : '—';
-      const tdNotes = document.createElement('td'); tdNotes.textContent = r.notes || '';
-      const tdDel = document.createElement('td');
-      const btnDel = document.createElement('button'); btnDel.className='btn small danger'; btnDel.textContent='Delete';
-      btnDel.addEventListener('click', ()=>{ if(confirm('Delete record?')){ const arr = loadRecords(); arr.splice(idx,1); saveRecords(arr); refreshTable(); showToast('Deleted'); } });
-      tdDel.appendChild(btnDel);
-      tr.append(tdTime, tdJs, tdPlane, tdAngle, tdMin, tdMax, tdNotes, tdDel);
-      ui.tbody.appendChild(tr);
-    });
-  }
-  refreshTable();
+// Handle orientation
+function handleOrientation(event){
+  // Pitch (beta) - front/back tilt
+  currentAngle = event.beta ? event.beta - zeroOffset : 0;
+  document.getElementById('angleDisplay').innerText = currentAngle.toFixed(1);
 
-  // Sensor helpers
-  function isIOS(){ return /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints>1); }
+  if(currentAngle > maxAngle) maxAngle = currentAngle;
+  if(currentAngle < minAngle) minAngle = currentAngle;
+  document.getElementById('maxDisplay').innerText = maxAngle.toFixed(1);
+  document.getElementById('minDisplay').innerText = minAngle.toFixed(1);
+}
 
-  async function enableSensors(){
-    try {
-      if (isIOS() && typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
-        const res = await DeviceMotionEvent.requestPermission();
-        if (res !== 'granted') throw new Error('Permission denied');
-      }
-      // Some platforms gate DeviceOrientationEvent too
-      if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function'){
-        try { await DeviceOrientationEvent.requestPermission(); } catch(e) { /* ignore if not present */ }
-      }
-      ui.sensorStatus.textContent = 'Sensors: ready';
-      ui.sensorStatus.style.background = 'transparent';
-      if (!listenerAdded) {
-        window.addEventListener('deviceorientation', onOrient, true);
-        listenerAdded = true;
-      }
-      showToast('Sensors enabled');
-    } catch (err){
-      ui.sensorStatus.textContent = 'Sensors: blocked';
-      ui.sensorStatus.style.background = '#331111';
-      showToast('Permission denied — use Manual Mode');
-    }
-  }
+// Session control
+document.getElementById('btnStart').addEventListener('click', ()=>{
+  let intervalSec = parseFloat(document.getElementById('autoInterval').value);
+  if(isNaN(intervalSec) || intervalSec <=0){ showToast('Invalid interval'); return; }
 
-  function getAxisAngle(alpha,beta,gamma,plane){
-    let val = 0;
-    switch(plane){
-      case 'alpha': val = ((alpha+540)%360)-180; break; // yaw -> -180..180
-      case 'beta': val = beta; break; // pitch
-      case 'gamma': val = gamma; break; // roll
-    }
-    return val;
-  }
-
-  function onOrient(e){
-    if (!running) return;
-    const now = performance.now();
-    const capMs = 1000 / Math.max(1, Math.min(60, Number(ui.sampleRate.value || 25)) );
-    if (now - lastTs < capMs) return;
-    lastTs = now;
-
-    const a = (typeof e.alpha === 'number') ? e.alpha : 0;
-    const b = (typeof e.beta === 'number') ? e.beta : 0;
-    const g = (typeof e.gamma === 'number') ? e.gamma : 0;
-
-    const raw = getAxisAngle(a,b,g,ui.plane.value) - zero;
-    // wrap to -180..180
-    let wrapped = ((raw + 180) % 360) - 180;
-
-    // basic spike filter: ignore extremely large jumps
-    const jump = Math.abs(wrapped - smoothedAngle);
-    if (jump > 120) return; // very likely interference or reset
-
-    smoothedAngle = smoothedAngle + smoothing * (wrapped - smoothedAngle);
-    currentAngle = smoothedAngle;
-
-    if (currentAngle > max) max = currentAngle;
-    if (currentAngle < min) min = currentAngle;
-
-    ui.angle.textContent = currentAngle.toFixed(1);
-    ui.max.textContent = isFinite(max) ? max.toFixed(1) : '—';
-    ui.min.textContent = isFinite(min) ? min.toFixed(1) : '—';
-
-    // if session recording active, push sample
-    if (sessionRecording){
-      sessionSamples.push({t: Date.now(), angle: Number(currentAngle.toFixed(2))});
-      updateSparkline();
-    }
-  }
-
-  // Calibration: hold & average
-  ui.btnCalibrate.addEventListener('click', ()=>calibrateHold());
-  async function calibrateHold(duration=1200){
-    if (!listenerAdded) { window.addEventListener('deviceorientation', onOrient, true); listenerAdded=true; }
-    ui.sensorStatus.textContent = 'Calibrating: hold still...';
-    const samples = [];
-    const handler = (e)=>{
-      samples.push(getAxisAngle(
-        Number.isFinite(e.alpha)?e.alpha:0,
-        Number.isFinite(e.beta)?e.beta:0,
-        Number.isFinite(e.gamma)?e.gamma:0,
-        ui.plane.value
-      ));
+  if(sessionInterval) clearInterval(sessionInterval);
+  sessionInterval = setInterval(()=>{
+    let record = {
+      time: new Date().toLocaleString(),
+      joint: document.getElementById('jointSelect').value,
+      angle: currentAngle.toFixed(1)
     };
-    window.addEventListener('deviceorientation', handler, true);
-    await new Promise(res=>setTimeout(res, duration));
-    window.removeEventListener('deviceorientation', handler, true);
-    if (samples.length === 0){
-      zero = 0; ui.zero.textContent = zero.toFixed(1);
-      showToast('Calibration failed — no data');
-      return;
-    }
-    const avg = samples.reduce((s,v)=>s+v,0)/samples.length;
-    zero = avg;
-    ui.zero.textContent = zero.toFixed(1);
-    // persist per joint/side/plane
-    const key = `zero_${ui.joint.value}_${ui.side.value}_${ui.plane.value}`;
-    localStorage.setItem(key, JSON.stringify(zero));
-    showToast('Calibrated');
-  }
+    records.push(record);
+    localStorage.setItem('records', JSON.stringify(records));
+    updateTable();
+  }, intervalSec*1000);
 
-  // Load persisted zero when joint/side/plane changes
-  function loadContextZero(){
-    const key = `zero_${ui.joint.value}_${ui.side.value}_${ui.plane.value}`;
-    const z = localStorage.getItem(key);
-    if (z !== null){ zero = Number(JSON.parse(z)); ui.zero.textContent = zero.toFixed(1); }
-    else { ui.zero.textContent = '—'; }
-  }
-  ui.joint.addEventListener('change', loadContextZero);
-  ui.side.addEventListener('change', loadContextZero);
-  ui.plane.addEventListener('change', loadContextZero);
-  loadContextZero();
+  showToast('Session started');
+});
 
-  ui.btnEnable.addEventListener('click', enableSensors);
+document.getElementById('btnStop').addEventListener('click', ()=>{
+  if(sessionInterval){ clearInterval(sessionInterval); sessionInterval=null; showToast('Session stopped'); }
+});
 
-  ui.btnResetMinMax.addEventListener('click', ()=>{
-    min = Infinity; max = -Infinity; ui.min.textContent='—'; ui.max.textContent='—'; showToast('Min/Max reset');
+// Update table
+function updateTable(){
+  const tbody = document.querySelector('#recordsTable tbody');
+  tbody.innerHTML = '';
+  records.forEach(r=>{
+    let tr = document.createElement('tr');
+    tr.innerHTML = `<td>${r.time}</td><td>${r.joint}</td><td>${r.angle}</td>`;
+    tbody.appendChild(tr);
   });
+}
 
-  // Helper: save current measurement (reusable for manual, auto-interval or button)
-  function saveCurrentRecord(auto=false){
-    const rec = {
-      id: uuidv4(),
-      time: Date.now(),
-      joint: ui.joint.value,
-      side: ui.side.value,
-      plane: ui.plane.options[ui.plane.selectedIndex].text,
-      angle: Number.isFinite(currentAngle) ? Number(currentAngle.toFixed(2)) : null,
-      min: isFinite(min) ? Number(min.toFixed(2)) : null,
-      max: isFinite(max) ? Number(max.toFixed(2)) : null,
-      zero: Number.isFinite(zero) ? Number(zero.toFixed(2)) : null,
-      notes: ui.notes.value.trim(),
-      session: null // reserved for session records
-    };
-    const arr = loadRecords(); arr.unshift(rec); saveRecords(arr); refreshTable();
-    if (auto) {
-      flashSparkline(); showToast('Auto-saved ✓', 900);
-    } else {
-      showToast('Saved');
-    }
-  }
+// Export CSV
+document.getElementById('btnExport').addEventListener('click', ()=>{
+  if(records.length===0){ showToast('No records'); return; }
+  let csv = 'Time,Joint,Angle°\n' + records.map(r=>`${r.time},${r.joint},${r.angle}`).join('\n');
+  let blob = new Blob([csv],{type:'text/csv'});
+  let url = URL.createObjectURL(blob);
+  let a = document.createElement('a');
+  a.href = url; a.download='records.csv'; a.click();
+  URL.revokeObjectURL(url);
+});
 
-  ui.btnStart.addEventListener('click', ()=>{
-    if (!listenerAdded){ window.addEventListener('deviceorientation', onOrient, true); listenerAdded=true; }
-    running = true;
-    ui.sensorStatus.textContent = 'Sensors: measuring…';
-    ui.sensorStatus.style.background = 'transparent';
-    showToast('Measuring');
-  });
-
-  ui.btnStop.addEventListener('click', ()=>{
-    running = false;
-    ui.sensorStatus.textContent = 'Sensors: stopped';
-    showToast('Stopped');
-    // stop listeners to avoid duplicates
-    if (listenerAdded){ window.removeEventListener('deviceorientation', onOrient, true); listenerAdded=false; }
-  });
-
-  ui.btnSave.addEventListener('click', ()=>{ saveCurrentRecord(false); ui.btnSave.textContent='Saved ✓'; setTimeout(()=> ui.btnSave.textContent='Save Record',700); });
-
-  // Export all records (CSV with BOM)
-  ui.btnExport.addEventListener('click', ()=>{
-    const data = loadRecords();
-    if (!data.length) { showToast('No records'); return; }
-    const header = ['time_iso','joint','side','plane','angle_deg','min_deg','max_deg','zero_ref_deg','notes','session_rows'];
-    const lines = [header.join(',')];
-    data.forEach(r=>{
-      const row = [
-        new Date(r.time).toISOString(),
-        r.joint, r.side, `"${r.plane}"`,
-        typeof r.angle==='number' ? r.angle.toFixed(2) : '',
-        typeof r.min==='number' ? r.min.toFixed(2) : '',
-        typeof r.max==='number' ? r.max.toFixed(2) : '',
-        typeof r.zero==='number' ? r.zero.toFixed(2) : '',
-        `"${(r.notes||'').replace(/"/g,'""')}"`,
-        r.session ? r.session.length : ''
-      ];
-      lines.push(row.join(','));
-    });
-    const bom = '\uFEFF';
-    const blob = new Blob([bom + lines.join('\n')], {type:'text/csv;charset=utf-8;'});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a'); a.href = url; a.download = 'rom-tracker.csv'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
-    showToast('Exported');
-  });
-
-  // Manual mode
-  ui.btnApplyManual.addEventListener('click', ()=>{
-    const v = parseFloat(ui.manualAngle.value.replace(',', '.'));
-    if (Number.isNaN(v)) { alert('Enter a valid number'); return; }
-    currentAngle = v;
-    if (v > max) max = v;
-    if (v < min) min = v;
-    ui.angle.textContent = currentAngle.toFixed(1);
-    ui.max.textContent = isFinite(max) ? max.toFixed(1) : '—';
-    ui.min.textContent = isFinite(min) ? min.toFixed(1) : '—';
-  });
-
-  // Auto-record functions (session-only)
-  function startAutoCountdownIfNeeded(){
-    stopAutoCountdown();
-    const sec = Number(ui.autoInterval.value || 0);
-    if (sec > 0 && sessionRecording){
-      // set next deadline and start countdown timer
-      nextSaveDeadline = Date.now() + sec * 1000;
-      countdownTimer = setInterval(()=>{
-        const remMs = nextSaveDeadline - Date.now();
-        const rem = Math.ceil(remMs / 1000);
-        ui.countdown.textContent = `Next save in ${rem}s`;
-        ui.sparkText.textContent = `Recording — ${rem}s`;
-        if (remMs <= 0){
-          // trigger auto-save snapshot
-          saveCurrentRecord(true);
-          // schedule next
-          nextSaveDeadline = Date.now() + sec * 1000;
-        }
-      }, 250);
-      // small visual class to show an active countdown
-      ui.sparkline.classList.add('flashging');
-    }
-  }
-
-  function stopAutoCountdown(){
-    if (countdownTimer){ clearInterval(countdownTimer); countdownTimer = null; }
-    ui.countdown.textContent = '';
-    ui.sparkText.textContent = sessionRecording ? 'Recording…' : 'No session yet';
-    ui.sparkline.classList.remove('flashging');
-  }
-
-  function flashSparkline(){
-    // briefly flash sparkline "dot"
-    ui.sparkFlash.style.opacity = '1';
-    setTimeout(()=>{ ui.sparkFlash.style.opacity = '0'; }, 400);
-  }
-
-  // Session recording
-  ui.btnStartSession.addEventListener('click', ()=>{
-    if (!listenerAdded){ window.addEventListener('deviceorientation', onOrient, true); listenerAdded=true; }
-    sessionRecording = true; sessionSamples = [];
-    ui.sparkText.textContent = 'Recording…';
-    showToast('Session recording started');
-    startAutoCountdownIfNeeded();
-  });
-
-  ui.btnStopSession.addEventListener('click', ()=>{
-    if (!sessionRecording){ showToast('No active session'); return; }
-    sessionRecording = false;
-    stopAutoCountdown();
-    // save session as a record
-    const rec = {
-      id: uuidv4(), time: Date.now(), joint: ui.joint.value, side: ui.side.value,
-      plane: ui.plane.options[ui.plane.selectedIndex].text, angle: sessionSamples.length?sessionSamples[sessionSamples.length-1].angle:null,
-      min: isFinite(min)?Number(min.toFixed(2)):null, max: isFinite(max)?Number(max.toFixed(2)):null, zero: Number.isFinite(zero)?Number(zero.toFixed(2)):null,
-      notes: ui.notes.value.trim(), session: sessionSamples.slice()
-    };
-    const arr = loadRecords(); arr.unshift(rec); saveRecords(arr); refreshTable();
-    // make a CSV for the session and offer download
-    if (sessionSamples.length){
-      const lines = ['time_iso,angle_deg'];
-      sessionSamples.forEach(s=> lines.push(`${new Date(s.t).toISOString()},${s.angle.toFixed(2)}`));
-      const bom = '\uFEFF';
-      const blob = new Blob([bom + lines.join('\n')], {type:'text/csv;charset=utf-8;'});
-      const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href=url; a.download = `session_${new Date().toISOString().replace(/[:.]/g,'-')}.csv`; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
-    }
-    ui.sparkText.textContent = 'Session saved';
-    showToast('Session saved');
-  });
-
-  // If user changes interval during active session, restart countdown
-  ui.autoInterval.addEventListener('change', ()=>{ if (sessionRecording) { startAutoCountdownIfNeeded(); } });
-
-  function updateSparkline(){
-    if (!sessionSamples.length){ ui.sparkText.textContent = 'No session yet'; ui.countdown.textContent=''; return; }
-    // simple textual sparkline: last 20 values
-    const last = sessionSamples.slice(-20).map(s=>s.angle);
-    ui.sparkText.textContent = last.map(v=>Math.round(v)).join(' • ');
-  }
-
-  // keyboard shortcuts: Space => Start/Stop; C => calibrate
-  document.addEventListener('keydown', (e)=>{
-    if (e.code === 'Space'){ e.preventDefault(); if (running) ui.btnStop.click(); else ui.btnStart.click(); }
-    if (e.key.toLowerCase()==='c') ui.btnCalibrate.click();
-  });
-
-  // Improve UX on first tap for iOS
-  document.addEventListener('touchstart', ()=>{}, {passive:true});
-
-  // ensure we cleanup before unload
-  window.addEventListener('beforeunload', ()=>{
-    if (listenerAdded) window.removeEventListener('deviceorientation', onOrient, true);
-    stopAutoCountdown();
-  });
-
-})();
+// Copy to clipboard
+document.getElementById('btnCopy').addEventListener('click', ()=>{
+  if(records.length===0){ showToast('No records'); return; }
+  let csv = 'Time,Joint,Angle°\n' + records.map(r=>`${r.time},${r.joint},${r.angle}`).join('\n');
+  navigator.clipboard.writeText(csv).then(()=>showToast('Records copied'));
+});
 </script>
 </body>
 </html>
