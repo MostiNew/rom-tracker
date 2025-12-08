@@ -26,11 +26,13 @@ select, button{width:100%;padding:12px;border-radius:12px;border:1px solid #2030
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:24px;background:#0f1b23;padding:10px 14px;border-radius:10px;border:1px solid #1f2f3a;box-shadow:0 6px 20px rgba(0,0,0,.4);display:none;z-index:999}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/moment@2.29.4/moment.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-moment@1.0.0"></script>
 </head>
 <body>
 <div class="wrap">
   <header>
-    <h1>YouMOVE – Deine Gelenkbewegung: privat, souverän und cloudfre</h1>
+    <h1>YouMOVE – Deine Gelenkbewegung: privat, souverän und cloudfrei</h1>
     <div class="flex">
       <button id="btnEnable" class="btn primary">Enable Sensors</button>
       <button id="btnCalibrate" class="btn">Set Zero</button>
@@ -114,6 +116,8 @@ select, button{width:100%;padding:12px;border-radius:12px;border:1px solid #2030
   </div>
 </div>
 
+<div class="toast" id="toast"></div>
+
 <script>
 (function(){
   const ui = {
@@ -138,7 +142,7 @@ select, button{width:100%;padding:12px;border-radius:12px;border:1px solid #2030
   };
 
   let running=false, zero=0, min=Infinity, max=-Infinity, currentAngle=0, listenerAdded=false;
-  let sessionSamples=[];
+  let sessionSamples=[], chartData=[]; 
   let autoSaveInterval=null;
   const liveWindowSec=30;
 
@@ -156,42 +160,55 @@ select, button{width:100%;padding:12px;border-radius:12px;border:1px solid #2030
     options:{
       animation:false,
       responsive:true,
-      scales:{ x:{ type:'time', time:{ tooltipFormat:'HH:mm:ss' } }, y:{ beginAtZero:true } }
+      scales:{
+        x:{ type:'time', time:{ tooltipFormat:'HH:mm:ss', unit:'second' }, ticks:{ source:'auto' } },
+        y:{ beginAtZero:true }
+      }
     }
   });
 
-  function showToast(txt, ms=1200){ alert(txt); } // can improve with styled toast later
+  function showToast(txt, ms=1500){
+    ui.toast.textContent=txt; ui.toast.style.display='block';
+    setTimeout(()=>{ui.toast.style.display='none';}, ms);
+  }
 
   function enableSensors(){
-    if(window.DeviceOrientationEvent){
-      if(typeof DeviceOrientationEvent.requestPermission==='function'){
-        DeviceOrientationEvent.requestPermission().then(p=>{
-          if(p==='granted') startSensorListener();
-          else ui.sensorStatus.textContent='Sensors blocked';
-        }).catch(()=>ui.sensorStatus.textContent='Sensors blocked');
-      }else startSensorListener();
-    }else ui.sensorStatus.textContent='Sensors not supported';
+    if(!window.DeviceOrientationEvent){
+      ui.sensorStatus.textContent='Sensors not supported';
+      showToast('Device orientation not supported');
+      return;
+    }
+    if(typeof DeviceOrientationEvent.requestPermission==='function'){
+      DeviceOrientationEvent.requestPermission().then(p=>{
+        if(p==='granted') startSensorListener();
+        else { ui.sensorStatus.textContent='Sensors blocked'; showToast('Permission denied'); }
+      }).catch(()=>{ ui.sensorStatus.textContent='Sensors blocked'; showToast('Permission denied'); });
+    }else startSensorListener();
   }
 
   function startSensorListener(){
-    if(!listenerAdded){
-      window.addEventListener('deviceorientation', e=>{
-        if(!running) return;
-        const alpha=e.alpha||0, beta=e.beta||0, gamma=e.gamma||0;
-        const val = getAngle(alpha,beta,gamma,ui.plane.value)-zero;
-        currentAngle = ((val+180)%360)-180;
-        if(currentAngle>max) max=currentAngle;
-        if(currentAngle<min) min=currentAngle;
-        sessionSamples.push({time:new Date(), value:currentAngle});
-        updateKPI();
-        updateChart();
-      }, true);
-      listenerAdded=true;
-      ui.sensorStatus.textContent='Sensors ready';
-    }
+    if(listenerAdded) return;
+    window.addEventListener('deviceorientation', e=>{
+      if(!running) return;
+      const a=e.alpha||0, b=e.beta||0, g=e.gamma||0;
+      const val = getAngle(a,b,g,ui.plane.value)-zero;
+      currentAngle = ((val+180)%360)-180;
+      if(currentAngle>max) max=currentAngle;
+      if(currentAngle<min) min=currentAngle;
+      const now=new Date();
+      sessionSamples.push({time:now,value:currentAngle});
+      chartData.push({time:now,value:currentAngle});
+      updateKPI();
+      updateChart();
+    }, true);
+    listenerAdded=true;
+    ui.sensorStatus.textContent='Sensors ready';
+    showToast('Sensors enabled');
   }
 
-  function getAngle(a,b,g,plane){ switch(plane){ case'alpha':return ((a+540)%360)-180; case'beta':return b; case'gamma':return g; default:return 0; } }
+  function getAngle(a,b,g,plane){ 
+    switch(plane){ case'alpha':return ((a+540)%360)-180; case'beta':return b; case'gamma':return g; default:return 0; } 
+  }
 
   function updateKPI(){
     ui.angle.textContent=currentAngle.toFixed(1);
@@ -206,7 +223,7 @@ select, button{width:100%;padding:12px;border-radius:12px;border:1px solid #2030
   function updateChart(){
     const now=new Date();
     const windowStart=new Date(now.getTime()-liveWindowSec*1000);
-    const visible=sessionSamples.filter(s=>s.time>=windowStart);
+    const visible=chartData.filter(s=>s.time>=windowStart);
     liveChart.data.labels=visible.map(s=>s.time);
     const values=visible.map(s=>s.value);
     const meanVal=values.length?values.reduce((a,b)=>a+b,0)/values.length:0;
@@ -222,12 +239,13 @@ select, button{width:100%;padding:12px;border-radius:12px;border:1px solid #2030
     const row=document.createElement('tr');
     row.innerHTML=`<td>${last.time.toLocaleTimeString()}</td><td>${ui.joint.value}</td><td>${ui.plane.value}</td><td>${ui.side.value}</td><td>${last.value.toFixed(1)}</td><td>${mean.toFixed(1)}</td>`;
     ui.savedSessions.appendChild(row);
-    sessionSamples=[]; // clear buffer for next auto-save
+    sessionSamples=[]; // clear buffer but chartData remains for live chart
   }
 
   ui.btnEnable.addEventListener('click', enableSensors);
   ui.btnStart.addEventListener('click', ()=>{
-    running=true;
+    if(!listenerAdded){ showToast('Enable sensors first'); return; }
+    running=true; 
     ui.sensorStatus.textContent='Session running';
     autoSaveInterval=setInterval(autoSave,20000);
   });
@@ -236,8 +254,8 @@ select, button{width:100%;padding:12px;border-radius:12px;border:1px solid #2030
     ui.sensorStatus.textContent='Session stopped';
     clearInterval(autoSaveInterval);
   });
-  ui.btnCalibrate.addEventListener('click', ()=>{ zero=currentAngle; updateKPI(); });
-  ui.btnResetMinMax.addEventListener('click', ()=>{ min=Infinity; max=-Infinity; updateKPI(); });
+  ui.btnCalibrate.addEventListener('click', ()=>{ zero=currentAngle; updateKPI(); showToast('Zero set'); });
+  ui.btnResetMinMax.addEventListener('click', ()=>{ min=Infinity; max=-Infinity; updateKPI(); showToast('Min/Max reset'); });
 
   ui.btnExport.addEventListener('click', ()=>{
     let csv='Timestamp,Joint,Plane,Side,Angle,Mean\n';
