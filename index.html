@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="de">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
@@ -108,9 +108,31 @@
     </div>
   </div>
 
+  <!-- Live Chart Card -->
+  <div class="card">
+    <strong>Live Session Chart</strong>
+    <canvas id="liveChart" style="width:100%;height:200px;margin-top:8px;"></canvas>
+    <div class="hint">This chart displays live angles during your session. It shows the mean value as a dashed line.</div>
+  </div>
+
   <div class="toast" id="toast"></div>
+
+  <!-- Disclaimer -->
+  <div class="card">
+    <p class="muted small">
+      <strong>Disclaimer:</strong> This tool is intended for screening, exercise guidance, and documentation support. It does not replace clinical judgment or certified goniometry where required.<br><br>
+      <strong>Intellectual Property:</strong> The software, design, code, and all algorithms are the intellectual property of Moustafa Mohammed Elsayed Ali and are protected by copyright and patent law. Any reproduction, distribution, or commercial use without explicit written permission is prohibited.<br><br>
+      <strong>Contact:</strong> Moustafa Mohammed Elsayed Ali<br>
+      Adresse: Kronwittener Straße 1, 84367 Tann, Germany<br>
+      Telefon: +49 1522 5321568<br>
+      E-Mail: <a href="mailto:mostischmidbauer@web.de">mostischmidbauer@web.de</a> | <a href="mailto:dptmostafa@gmail.com">dptmostafa@gmail.com</a><br>
+      LinkedIn: <a href="https://www.linkedin.com/in/moustafa-ali-024471aa/" target="_blank">https://www.linkedin.com/in/moustafa-ali-024471aa/</a>
+    </p>
+  </div>
+
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 (function(){
   const ui = {
@@ -136,8 +158,8 @@
     toast: document.getElementById('toast')
   };
 
-  let running = false, zero = 0, min = Infinity, max = -Infinity, currentAngle = 0, listenerAdded=false;
-  let sessionSamples = [];
+  let running=false, zero=0, min=Infinity, max=-Infinity, currentAngle=0, listenerAdded=false;
+  let sessionSamples=[];
 
   function showToast(txt, ms=1200){ ui.toast.textContent=txt; ui.toast.style.display='block'; setTimeout(()=>ui.toast.style.display='none', ms); }
 
@@ -179,6 +201,7 @@
     if(currentAngle<min) min=currentAngle;
     sessionSamples.push(currentAngle);
     updateKPI();
+    updateLiveChart();
   }
 
   function updateKPI(){
@@ -201,20 +224,47 @@
     if(isNaN(v)){ return alert('Enter valid number'); }
     currentAngle=v; if(v>max) max=v; if(v<min) min=v;
     sessionSamples.push(v); updateKPI();
+    updateLiveChart();
   });
+
+  // Chart.js setup
+  const ctx = document.getElementById('liveChart').getContext('2d');
+  const liveChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: [],
+      datasets: [
+        { label:'Angle (°)', data:[], borderColor:'#50c878', backgroundColor:'rgba(80,200,120,0.1)', tension:0.2 },
+        { label:'Mean', data:[], borderColor:'#ffc857', borderDash:[5,5], fill:false, pointRadius:0, tension:0 }
+      ]
+    },
+    options:{
+      animation:false,
+      responsive:true,
+      plugins:{ legend:{ display:true } },
+      scales:{
+        x:{ type:'time', time:{ unit:'second', tooltipFormat:'HH:mm:ss' } },
+        y:{ beginAtZero:true }
+      }
+    }
+  });
+
+  function updateLiveChart(){
+    if(!sessionSamples.length) return;
+    const now = new Date();
+    const labels = sessionSamples.map((_,i)=>new Date(now.getTime()-(sessionSamples.length-i-1)*1000));
+    const data = sessionSamples.slice();
+    const mean = data.reduce((a,b)=>a+b,0)/data.length;
+    const meanLine = Array(data.length).fill(mean);
+
+    liveChart.data.labels = labels;
+    liveChart.data.datasets[0].data = data;
+    liveChart.data.datasets[1].data = meanLine;
+    liveChart.update();
+  }
+
 })();
 </script>
 </body>
 </html>
 
-<div class="card">
-  <p class="muted small">
-    <strong>Disclaimer:</strong> This tool is intended for screening, exercise guidance, and documentation support. It does not replace clinical judgment or certified goniometry where required.<br><br>
-    <strong>Intellectual Property:</strong> The software, design, code, and all algorithms are the intellectual property of Moustafa Mohammed Elsayed Ali and are protected by copyright and patent law. Any reproduction, distribution, or commercial use without explicit written permission is prohibited.<br><br>
-    <strong>Contact:</strong> Moustafa Mohammed Elsayed Ali<br>
-    Adresse: Kronwittener Straße 1, 84367 Tann, Germany<br>
-    Telefon: +49 1522 5321568<br>
-    E-Mail: <a href="mailto:mostischmidbauer@web.de">mostischmidbauer@web.de</a> | <a href="mailto:dptmostafa@gmail.com">dptmostafa@gmail.com</a><br>
-    LinkedIn: <a href="https://www.linkedin.com/in/moustafa-ali-024471aa/" target="_blank">https://www.linkedin.com/in/moustafa-ali-024471aa/</a>
-  </p>
-</div>
