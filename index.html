@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
-<title>ROM Tracker – Local Range of Motion</title>
+<title>ROM Tracker – Local Range of Motion (Enhanced)</title>
 <style>
   :root { --bg:#0b1016; --card:#121820; --muted:#8aa0b2; --text:#eaf2f8; --accent:#50c878; --danger:#ff6b6b; --warn:#ffc857; }
   *{box-sizing:border-box;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
@@ -13,7 +13,7 @@
   h1{font-size:22px;margin:0}
   .card{background:var(--card);border:1px solid #1d2732;border-radius:18px;padding:14px;margin:10px 0;box-shadow:0 6px 24px rgba(0,0,0,.28)}
   label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px}
-  select, input[type="text"], button{width:100%;padding:12px 12px;border-radius:12px;border:1px solid #203040;background:#0b1118;color:var(--text);font-size:15px}
+  select, input[type="text"], button, input[type="number"]{width:100%;padding:12px 12px;border-radius:12px;border:1px solid #203040;background:#0b1118;color:var(--text);font-size:15px}
   .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
   .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
   .btn{cursor:pointer;transition:transform .02s ease,opacity .2s}
@@ -22,7 +22,7 @@
   .btn.warn{background:var(--warn);color:#432; border-color:#a77}
   .btn.danger{background:var(--danger);color:#320a0a;border-color:#7a1e1e}
   .btn.ghost{background:#0a121a;border-color:#1d2a38}
-  .kpi{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+  .kpi{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
   .tile{background:#0a121a;border:1px solid #1d2a38;border-radius:16px;padding:14px;text-align:center}
   .tile h3{margin:4px 0 0;font-size:24px}
   .tile span{font-size:12px;color:var(--muted)}
@@ -36,16 +36,19 @@
   .right{margin-left:auto}
   .small{font-size:12px}
   .separator{height:1px;background:#203040;margin:10px 0;border-radius:1px}
+  button:focus{ outline:3px solid rgba(80,200,120,0.18); outline-offset:2px; }
+  .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:24px;background:#0f1b23;padding:10px 14px;border-radius:10px;border:1px solid #1f2f3a;box-shadow:0 6px 20px rgba(0,0,0,.4);display:none}
+  .sparkline{height:48px;width:100%;border-radius:8px;background:linear-gradient(180deg,#081017,#071017);display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:12px}
 </style>
 </head>
 <body>
 <div class="wrap">
   <header>
-    <h1>🦾 ROM Tracker</h1>
+    <h1>MeineMOVE – Gelenkbewegung Privat, offline, ohne Cloud speichern </h1>
     <div class="flex">
-      <button id="btnEnable" class="btn ghost">Enable Sensors</button>
-      <button id="btnCalibrate" class="btn ghost">Set Zero</button>
-      <button id="btnResetMinMax" class="btn ghost">Reset Min/Max</button>
+      <button id="btnEnable" class="btn ghost" aria-label="Enable sensors">Enable Sensors</button>
+      <button id="btnCalibrate" class="btn ghost" aria-label="Set zero (calibrate)">Set Zero</button>
+      <button id="btnResetMinMax" class="btn ghost" aria-label="Reset min and max">Reset Min/Max</button>
     </div>
   </header>
 
@@ -53,7 +56,7 @@
     <div class="row">
       <div>
         <label>Joint</label>
-        <select id="joint">
+        <select id="joint" aria-label="Joint">
           <option>Shoulder</option>
           <option>Elbow</option>
           <option>Wrist</option>
@@ -67,7 +70,7 @@
       </div>
       <div>
         <label>Plane / Movement (suggested axis)</label>
-        <select id="plane">
+        <select id="plane" aria-label="Plane">
           <option value="beta">Flexion/Extension (β / pitch)</option>
           <option value="gamma">Abduction/Adduction (γ / roll)</option>
           <option value="alpha">Rotation (α / yaw)*</option>
@@ -77,7 +80,7 @@
     <div class="row">
       <div>
         <label>Side</label>
-        <select id="side">
+        <select id="side" aria-label="Side">
           <option>Right</option>
           <option>Left</option>
           <option>Midline</option>
@@ -85,7 +88,7 @@
       </div>
       <div>
         <label>Notes (optional)</label>
-        <input id="notes" type="text" placeholder="e.g., post-op wk 2, pain at end-range">
+        <input id="notes" type="text" placeholder="e.g., post-op wk 2, pain at end-range" aria-label="Notes">
       </div>
     </div>
     <div class="hint">* α/yaw may be less stable on some phones. For rotation, try placing phone on distal segment and keep devices away from magnets.</div>
@@ -95,27 +98,27 @@
     <div class="kpi">
       <div class="tile">
         <span>Angle (°)</span>
-        <h3 id="angle">0</h3>
+        <h3 id="angle">—</h3>
       </div>
       <div class="tile">
         <span>Max (°)</span>
-        <h3 id="max">0</h3>
+        <h3 id="max">—</h3>
       </div>
       <div class="tile">
         <span>Min (°)</span>
-        <h3 id="min">0</h3>
+        <h3 id="min">—</h3>
       </div>
       <div class="tile">
         <span>Zero Ref (°)</span>
-        <h3 id="zero">0</h3>
+        <h3 id="zero">—</h3>
       </div>
     </div>
     <div class="flex" style="margin-top:10px;">
-      <button id="btnStart" class="btn primary">Start</button>
-      <button id="btnStop" class="btn warn">Stop</button>
-      <button id="btnSave" class="btn">Save Record</button>
-      <button id="btnExport" class="btn">Export CSV</button>
-      <span class="pill right" id="sensorStatus">Sensors: idle</span>
+      <button id="btnStart" class="btn primary" aria-label="Start measurement">Start</button>
+      <button id="btnStop" class="btn warn" aria-label="Stop measurement">Stop</button>
+      <button id="btnSave" class="btn" aria-label="Save record">Save Record</button>
+      <button id="btnExport" class="btn" aria-label="Export all records">Export CSV</button>
+      <span class="pill right" id="sensorStatus" role="status" aria-live="polite">Sensors: idle</span>
     </div>
     <div class="hint">Place/strap the phone on the distal segment (e.g., forearm for elbow, tibia for knee). Tap <b>Set Zero</b> at neutral, then move through range.</div>
   </div>
@@ -127,7 +130,7 @@
     </div>
     <div class="separator"></div>
     <div style="overflow:auto">
-      <table id="table">
+      <table id="table" aria-label="Saved records">
         <thead>
           <tr>
             <th>Time</th>
@@ -151,19 +154,48 @@
     <div class="row" style="margin-top:8px;">
       <div>
         <label>Set angle manually (°)</label>
-        <input id="manualAngle" type="text" inputmode="decimal" placeholder="e.g., 92.5">
+        <input id="manualAngle" type="text" inputmode="decimal" placeholder="e.g., 92.5" aria-label="Manual angle">
       </div>
       <div class="flex" style="align-items:flex-end">
-        <button id="btnApplyManual" class="btn">Apply</button>
+        <button id="btnApplyManual" class="btn" aria-label="Apply manual angle">Apply</button>
       </div>
     </div>
     <div class="hint">Use this if Device Motion is blocked by the browser or policy. You can still log and export.</div>
   </div>
 
-  <p class="muted small">
-    Disclaimer: This tool is for screening, exercise guidance, and documentation support. It doesn’t replace clinical judgment or certified goniometry where required.
-  </p>
+  <div class="card">
+    <strong>Session Recording</strong>
+    <div class="row" style="margin-top:8px;">
+      <div>
+        <label>Sample rate (Hz)</label>
+        <input id="sampleRate" type="number" min="1" max="60" value="25" step="1" aria-label="Sample rate">
+      </div>
+      <div class="flex" style="align-items:flex-end">
+        <button id="btnStartSession" class="btn primary" aria-label="Start session recording">Start Session</button>
+        <button id="btnStopSession" class="btn warn" aria-label="Stop session recording">Stop Session</button>
+      </div>
+    </div>
+    <div style="margin-top:8px;" class="sparkline" id="sparkline">No session yet</div>
+    <div class="hint">Session mode captures continuous time-series (timestamp + angle) and saves it as a single record. Export session CSV separately.</div>
+  </div>
+
+ <p class="muted small" style="margin-top:12px;">
+  Disclaimer: This tool is intended for <strong>screening, exercise guidance, and documentation support</strong>. 
+  It <strong>does not replace clinical judgment</strong> or <strong>certified goniometry</strong> where required.<br><br>
+  <strong>Intellectual Property:</strong> The software, design, code, and all algorithms are the 
+  <strong>intellectual property of Moustafa Mohammed Elsayed Ali</strong> and are protected by copyright and patent law. 
+  Any reproduction, distribution, or commercial use without explicit written permission is prohibited.<br><br>
+  <strong>Contact:</strong> Moustafa Mohammed Elsayed Ali<br>
+  Adresse: Kronwittener Straße 1, 84367 Tann, Germany<br>
+  Telefon: +49 1522 5321568<br>
+  E-Mail: <a href="mailto:mostischmidbauer@web.de">mostischmidbauer@web.de</a> | 
+  <a href="mailto:dptmostafa@gmail.com">dptmostafa@gmail.com</a><br>
+  LinkedIn: <a href="https://www.linkedin.com/in/moustafa-ali-024471aa/" target="_blank">
+  https://www.linkedin.com/in/moustafa-ali-024471aa/</a>
+</p>
 </div>
+
+<div class="toast" id="toast"></div>
 
 <script>
 (function(){
@@ -188,15 +220,26 @@
     count: document.getElementById('count'),
     manualAngle: document.getElementById('manualAngle'),
     btnApplyManual: document.getElementById('btnApplyManual'),
+    sampleRate: document.getElementById('sampleRate'),
+    btnStartSession: document.getElementById('btnStartSession'),
+    btnStopSession: document.getElementById('btnStopSession'),
+    sparkline: document.getElementById('sparkline'),
+    toast: document.getElementById('toast'),
   };
 
   // State
   let running = false;
   let zero = 0;
-  let min = 0;
-  let max = 0;
+  let min = Infinity;
+  let max = -Infinity;
   let currentAngle = 0;
   let listenerAdded = false;
+  let smoothedAngle = 0;
+  let smoothing = 0.18; // EMA alpha
+  let lastTs = 0;
+  let sessionRecording = false;
+  let sessionSamples = [];
+  let sessionTimer = null;
 
   // Storage
   const KEY = 'rom-tracker-records-v1';
@@ -210,193 +253,216 @@
     const d = new Date(ts);
     return d.toLocaleString();
   }
+  function showToast(txt, ms=1800){
+    ui.toast.textContent = txt; ui.toast.style.display = 'block';
+    clearTimeout(ui.toast._t);
+    ui.toast._t = setTimeout(()=> ui.toast.style.display = 'none', ms);
+  }
+
+  function uuidv4(){ return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c=>{ const r = Math.random()*16|0, v = c==='x'?r:(r&0x3|0x8); return v.toString(16); }); }
+
   function refreshTable(){
     const data = loadRecords();
     ui.count.textContent = `${data.length} saved`;
-    ui.tbody.innerHTML = data.map((r, idx)=> `
-      <tr>
-        <td>${fmtTime(r.time)}</td>
-        <td>${r.joint} (${r.side})</td>
-        <td>${r.plane}</td>
-        <td>${r.angle.toFixed(1)}</td>
-        <td>${r.min.toFixed(1)}</td>
-        <td>${r.max.toFixed(1)}</td>
-        <td>${r.notes ? r.notes.replace(/</g,'&lt;') : ''}</td>
-        <td><button class="btn small danger" data-del="${idx}">Delete</button></td>
-      </tr>
-    `).join('');
+    ui.tbody.innerHTML = '';
+    data.forEach((r, idx)=>{
+      const tr = document.createElement('tr');
+      const tdTime = document.createElement('td'); tdTime.textContent = fmtTime(r.time);
+      const tdJs = document.createElement('td'); tdJs.textContent = `${r.joint} (${r.side})`;
+      const tdPlane = document.createElement('td'); tdPlane.textContent = r.plane;
+      const tdAngle = document.createElement('td'); tdAngle.textContent = typeof r.angle === 'number' ? r.angle.toFixed(1) : '—';
+      const tdMin = document.createElement('td'); tdMin.textContent = typeof r.min === 'number' ? r.min.toFixed(1) : '—';
+      const tdMax = document.createElement('td'); tdMax.textContent = typeof r.max === 'number' ? r.max.toFixed(1) : '—';
+      const tdNotes = document.createElement('td'); tdNotes.textContent = r.notes || '';
+      const tdDel = document.createElement('td');
+      const btnDel = document.createElement('button'); btnDel.className='btn small danger'; btnDel.textContent='Delete';
+      btnDel.addEventListener('click', ()=>{ if(confirm('Delete record?')){ const arr = loadRecords(); arr.splice(idx,1); saveRecords(arr); refreshTable(); showToast('Deleted'); } });
+      tdDel.appendChild(btnDel);
+      tr.append(tdTime, tdJs, tdPlane, tdAngle, tdMin, tdMax, tdNotes, tdDel);
+      ui.tbody.appendChild(tr);
+    });
   }
   refreshTable();
-
-  // Delete handler
-  document.addEventListener('click', (e)=>{
-    const btn = e.target.closest('button[data-del]');
-    if(!btn) return;
-    const idx = +btn.dataset.del;
-    const arr = loadRecords();
-    arr.splice(idx,1);
-    saveRecords(arr);
-    refreshTable();
-  });
 
   // Sensor helpers
   function isIOS(){ return /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints>1); }
 
   async function enableSensors(){
     try {
-      if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
+      if (isIOS() && typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
         const res = await DeviceMotionEvent.requestPermission();
         if (res !== 'granted') throw new Error('Permission denied');
       }
-      if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-        const res2 = await DeviceOrientationEvent.requestPermission();
-        // Some iOS versions only gate one of the two; ignore if not present
+      // Some platforms gate DeviceOrientationEvent too
+      if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function'){
+        try { await DeviceOrientationEvent.requestPermission(); } catch(e) { /* ignore if not present */ }
       }
       ui.sensorStatus.textContent = 'Sensors: ready';
       ui.sensorStatus.style.background = 'transparent';
-      // Add listener if not present
       if (!listenerAdded) {
         window.addEventListener('deviceorientation', onOrient, true);
         listenerAdded = true;
       }
+      showToast('Sensors enabled');
     } catch (err){
       ui.sensorStatus.textContent = 'Sensors: blocked';
       ui.sensorStatus.style.background = '#331111';
-      alert('Motion/Orientation permission was not granted. You can still use Manual Mode.');
+      showToast('Permission denied — use Manual Mode');
     }
   }
 
-  function getAxisAngle(alpha, beta, gamma, plane){
-    // Normalize angles: alpha(0..360), beta(-180..180), gamma(-90..90)
+  function getAxisAngle(alpha,beta,gamma,plane){
     let val = 0;
     switch(plane){
-      case 'alpha':
-        // Convert yaw to -180..180 for better diffs
-        val = ((alpha+540)%360)-180;
-        break;
-      case 'beta':
-        val = beta; // pitch
-        break;
-      case 'gamma':
-        val = gamma; // roll
-        break;
+      case 'alpha': val = ((alpha+540)%360)-180; break; // yaw -> -180..180
+      case 'beta': val = beta; break; // pitch
+      case 'gamma': val = gamma; break; // roll
     }
     return val;
   }
 
   function onOrient(e){
     if (!running) return;
-    // Some browsers pass nulls when not ready
+    const now = performance.now();
+    const capMs = 1000 / Math.max(1, Math.min(60, Number(ui.sampleRate.value || 25)) );
+    if (now - lastTs < capMs) return;
+    lastTs = now;
+
     const a = (typeof e.alpha === 'number') ? e.alpha : 0;
     const b = (typeof e.beta === 'number') ? e.beta : 0;
     const g = (typeof e.gamma === 'number') ? e.gamma : 0;
 
-    const axis = ui.plane.value;
-    const raw = getAxisAngle(a,b,g,axis);
-    currentAngle = raw - zero;
+    const raw = getAxisAngle(a,b,g,ui.plane.value) - zero;
+    // wrap to -180..180
+    let wrapped = ((raw + 180) % 360) - 180;
 
-    // Keep within -360..360 just in case
-    if (currentAngle > 360) currentAngle -= 360;
-    if (currentAngle < -360) currentAngle += 360;
+    // basic spike filter: ignore extremely large jumps
+    const jump = Math.abs(wrapped - smoothedAngle);
+    if (jump > 120) return; // very likely interference or reset
 
-    // Track min/max
+    smoothedAngle = smoothedAngle + smoothing * (wrapped - smoothedAngle);
+    currentAngle = smoothedAngle;
+
     if (currentAngle > max) max = currentAngle;
     if (currentAngle < min) min = currentAngle;
 
-    // Smooth display (simple)
     ui.angle.textContent = currentAngle.toFixed(1);
-    ui.max.textContent = max.toFixed(1);
-    ui.min.textContent = min.toFixed(1);
+    ui.max.textContent = isFinite(max) ? max.toFixed(1) : '—';
+    ui.min.textContent = isFinite(min) ? min.toFixed(1) : '—';
+
+    // if session recording active, push sample
+    if (sessionRecording){
+      sessionSamples.push({t: Date.now(), angle: Number(currentAngle.toFixed(2))});
+      updateSparkline();
+    }
   }
 
-  // UI actions
+  // Calibration: hold & average
+  ui.btnCalibrate.addEventListener('click', ()=>calibrateHold());
+  async function calibrateHold(duration=1200){
+    if (!listenerAdded) { window.addEventListener('deviceorientation', onOrient, true); listenerAdded=true; }
+    ui.sensorStatus.textContent = 'Calibrating: hold still...';
+    const samples = [];
+    const handler = (e)=>{
+      samples.push(getAxisAngle(
+        Number.isFinite(e.alpha)?e.alpha:0,
+        Number.isFinite(e.beta)?e.beta:0,
+        Number.isFinite(e.gamma)?e.gamma:0,
+        ui.plane.value
+      ));
+    };
+    window.addEventListener('deviceorientation', handler, true);
+    await new Promise(res=>setTimeout(res, duration));
+    window.removeEventListener('deviceorientation', handler, true);
+    if (samples.length === 0){
+      zero = 0; ui.zero.textContent = zero.toFixed(1);
+      showToast('Calibration failed — no data');
+      return;
+    }
+    const avg = samples.reduce((s,v)=>s+v,0)/samples.length;
+    zero = avg;
+    ui.zero.textContent = zero.toFixed(1);
+    // persist per joint/side/plane
+    const key = `zero_${ui.joint.value}_${ui.side.value}_${ui.plane.value}`;
+    localStorage.setItem(key, JSON.stringify(zero));
+    showToast('Calibrated');
+  }
+
+  // Load persisted zero when joint/side/plane changes
+  function loadContextZero(){
+    const key = `zero_${ui.joint.value}_${ui.side.value}_${ui.plane.value}`;
+    const z = localStorage.getItem(key);
+    if (z !== null){ zero = Number(JSON.parse(z)); ui.zero.textContent = zero.toFixed(1); }
+    else { ui.zero.textContent = '—'; }
+  }
+  ui.joint.addEventListener('change', loadContextZero);
+  ui.side.addEventListener('change', loadContextZero);
+  ui.plane.addEventListener('change', loadContextZero);
+  loadContextZero();
+
   ui.btnEnable.addEventListener('click', enableSensors);
 
-  ui.btnCalibrate.addEventListener('click', ()=>{
-    // Set zero to current raw axis value
-    // Force a one-time read by temporarily listening once if not running
-    const axis = ui.plane.value;
-    const takeZero = (alpha,beta,gamma)=>{
-      zero = getAxisAngle(alpha,beta,gamma,axis);
-      ui.zero.textContent = zero.toFixed(1);
-    };
-
-    // Best effort: use last known via DeviceOrientationAbsolute if available
-    let handled = false;
-    const once = (e)=>{
-      handled = true;
-      const a = (typeof e.alpha === 'number') ? e.alpha : 0;
-      const b = (typeof e.beta === 'number') ? e.beta : 0;
-      const g = (typeof e.gamma === 'number') ? e.gamma : 0;
-      takeZero(a,b,g);
-      window.removeEventListener('deviceorientation', once, true);
-    };
-    window.addEventListener('deviceorientation', once, true);
-
-    // Fallback if event doesn't fire rapidly
-    setTimeout(()=>{
-      if (!handled){ zero = 0; ui.zero.textContent = '0.0'; }
-    }, 300);
-  });
-
   ui.btnResetMinMax.addEventListener('click', ()=>{
-    min = 0; max = 0;
-    ui.min.textContent = '0.0'; ui.max.textContent = '0.0';
+    min = Infinity; max = -Infinity; ui.min.textContent='—'; ui.max.textContent='—'; showToast('Min/Max reset');
   });
 
   ui.btnStart.addEventListener('click', ()=>{
-    if (!listenerAdded) window.addEventListener('deviceorientation', onOrient, true);
-    listenerAdded = true;
+    if (!listenerAdded){ window.addEventListener('deviceorientation', onOrient, true); listenerAdded=true; }
     running = true;
     ui.sensorStatus.textContent = 'Sensors: measuring…';
     ui.sensorStatus.style.background = 'transparent';
+    showToast('Measuring');
   });
 
   ui.btnStop.addEventListener('click', ()=>{
     running = false;
     ui.sensorStatus.textContent = 'Sensors: stopped';
+    showToast('Stopped');
+    // stop listeners to avoid duplicates
+    if (listenerAdded){ window.removeEventListener('deviceorientation', onOrient, true); listenerAdded=false; }
   });
 
   ui.btnSave.addEventListener('click', ()=>{
     const rec = {
+      id: uuidv4(),
       time: Date.now(),
       joint: ui.joint.value,
       side: ui.side.value,
       plane: ui.plane.options[ui.plane.selectedIndex].text,
-      angle: Number.isFinite(currentAngle) ? currentAngle : 0,
-      min: Number.isFinite(min) ? min : 0,
-      max: Number.isFinite(max) ? max : 0,
-      zero: Number.isFinite(zero) ? zero : 0,
-      notes: ui.notes.value.trim()
+      angle: Number.isFinite(currentAngle) ? Number(currentAngle.toFixed(2)) : null,
+      min: isFinite(min) ? Number(min.toFixed(2)) : null,
+      max: isFinite(max) ? Number(max.toFixed(2)) : null,
+      zero: Number.isFinite(zero) ? Number(zero.toFixed(2)) : null,
+      notes: ui.notes.value.trim(),
+      session: null // reserved for session records
     };
-    const arr = loadRecords();
-    arr.unshift(rec);
-    saveRecords(arr);
-    refreshTable();
-    // small UX touch
-    ui.btnSave.textContent = 'Saved ✓';
-    setTimeout(()=> ui.btnSave.textContent = 'Save Record', 700);
+    const arr = loadRecords(); arr.unshift(rec); saveRecords(arr); refreshTable(); ui.btnSave.textContent='Saved ✓'; setTimeout(()=> ui.btnSave.textContent='Save Record',700);
   });
 
+  // Export all records (CSV with BOM)
   ui.btnExport.addEventListener('click', ()=>{
     const data = loadRecords();
-    const header = ['time_iso','joint','side','plane','angle_deg','min_deg','max_deg','zero_ref_deg','notes'];
+    if (!data.length) { showToast('No records'); return; }
+    const header = ['time_iso','joint','side','plane','angle_deg','min_deg','max_deg','zero_ref_deg','notes','session_rows'];
     const lines = [header.join(',')];
     data.forEach(r=>{
       const row = [
         new Date(r.time).toISOString(),
         r.joint, r.side, `"${r.plane}"`,
-        r.angle.toFixed(2), r.min.toFixed(2), r.max.toFixed(2), r.zero.toFixed(2),
-        `"${(r.notes||'').replace(/"/g,'""')}"`
+        typeof r.angle==='number' ? r.angle.toFixed(2) : '',
+        typeof r.min==='number' ? r.min.toFixed(2) : '',
+        typeof r.max==='number' ? r.max.toFixed(2) : '',
+        typeof r.zero==='number' ? r.zero.toFixed(2) : '',
+        `"${(r.notes||'').replace(/"/g,'""')}"`,
+        r.session ? r.session.length : ''
       ];
       lines.push(row.join(','));
     });
-    const blob = new Blob([lines.join('\n')], {type:'text/csv'});
+    const bom = '\uFEFF';
+    const blob = new Blob([bom + lines.join('\n')], {type:'text/csv;charset=utf-8;'});
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = 'rom-tracker.csv';
-    document.body.appendChild(a); a.click(); a.remove();
-    URL.revokeObjectURL(url);
+    const a = document.createElement('a'); a.href = url; a.download = 'rom-tracker.csv'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+    showToast('Exported');
   });
 
   // Manual mode
@@ -407,12 +473,62 @@
     if (v > max) max = v;
     if (v < min) min = v;
     ui.angle.textContent = currentAngle.toFixed(1);
-    ui.max.textContent = max.toFixed(1);
-    ui.min.textContent = min.toFixed(1);
+    ui.max.textContent = isFinite(max) ? max.toFixed(1) : '—';
+    ui.min.textContent = isFinite(min) ? min.toFixed(1) : '—';
+  });
+
+  // Session recording
+  ui.btnStartSession.addEventListener('click', ()=>{
+    if (!listenerAdded){ window.addEventListener('deviceorientation', onOrient, true); listenerAdded=true; }
+    sessionRecording = true; sessionSamples = [];
+    ui.sparkline.textContent = 'Recording…';
+    showToast('Session recording started');
+  });
+
+  ui.btnStopSession.addEventListener('click', ()=>{
+    if (!sessionRecording){ showToast('No active session'); return; }
+    sessionRecording = false;
+    // save session as a record
+    const rec = {
+      id: uuidv4(), time: Date.now(), joint: ui.joint.value, side: ui.side.value,
+      plane: ui.plane.options[ui.plane.selectedIndex].text, angle: sessionSamples.length?sessionSamples[sessionSamples.length-1].angle:null,
+      min: isFinite(min)?Number(min.toFixed(2)):null, max: isFinite(max)?Number(max.toFixed(2)):null, zero: Number.isFinite(zero)?Number(zero.toFixed(2)):null,
+      notes: ui.notes.value.trim(), session: sessionSamples.slice()
+    };
+    const arr = loadRecords(); arr.unshift(rec); saveRecords(arr); refreshTable();
+    // make a CSV for the session and offer download
+    if (sessionSamples.length){
+      const lines = ['time_iso,angle_deg'];
+      sessionSamples.forEach(s=> lines.push(`${new Date(s.t).toISOString()},${s.angle.toFixed(2)}`));
+      const bom = '\uFEFF';
+      const blob = new Blob([bom + lines.join('\n')], {type:'text/csv;charset=utf-8;'});
+      const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href=url; a.download = `session_${new Date().toISOString().replace(/[:.]/g,'-')}.csv`; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+    }
+    ui.sparkline.textContent = 'Session saved';
+    showToast('Session saved');
+  });
+
+  function updateSparkline(){
+    if (!sessionSamples.length){ ui.sparkline.textContent = 'No session yet'; return; }
+    // simple textual sparkline: last 20 values
+    const last = sessionSamples.slice(-20).map(s=>s.angle);
+    ui.sparkline.textContent = last.map(v=>Math.round(v)).join(' • ');
+  }
+
+  // keyboard shortcuts: Space => Start/Stop; C => calibrate
+  document.addEventListener('keydown', (e)=>{
+    if (e.code === 'Space'){ e.preventDefault(); if (running) ui.btnStop.click(); else ui.btnStart.click(); }
+    if (e.key.toLowerCase()==='c') ui.btnCalibrate.click();
   });
 
   // Improve UX on first tap for iOS
   document.addEventListener('touchstart', ()=>{}, {passive:true});
+
+  // ensure we cleanup before unload
+  window.addEventListener('beforeunload', ()=>{
+    if (listenerAdded) window.removeEventListener('deviceorientation', onOrient, true);
+  });
+
 })();
 </script>
 </body>
