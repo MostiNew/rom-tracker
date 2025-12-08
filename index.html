@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
 <title>ROM Tracker – YouMOVE</title>
 <style>
-  :root { --bg:#0b1016; --card:#121820; --muted:#8aa0b2; --text:#eaf2f8; --accent:#50c878; --danger:#ff6b6b; --warn:#ffc857; --flash:#50c878; }
+  :root { --bg:#0b1016; --card:#121820; --muted:#8aa0b2; --text:#eaf2f8; --accent:#50c878; --danger:#ff6b6b; --warn:#ffc857; }
   *{box-sizing:border-box;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
   body{margin:0;background:linear-gradient(180deg,#0b1016,#0e141c);color:var(--text)}
   .wrap{max-width:960px;margin:0 auto;padding:16px 14px 40px}
@@ -13,29 +13,30 @@
   h1{font-size:22px;margin:0}
   .card{background:var(--card);border:1px solid #1d2732;border-radius:18px;padding:14px;margin:10px 0;box-shadow:0 6px 24px rgba(0,0,0,.28)}
   label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px}
-  select, input[type="text"], button, input[type="number"]{width:100%;padding:12px 12px;border-radius:12px;border:1px solid #203040;background:#0b1118;color:var(--text);font-size:15px}
+  select, button{width:100%;padding:12px 12px;border-radius:12px;border:1px solid #203040;background:#0b1118;color:var(--text);font-size:15px}
   .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
   .btn{cursor:pointer;transition:transform .02s ease,opacity .2s}
   .btn:active{transform:scale(.98)}
   .btn.primary{background:var(--accent);color:#072d19;border-color:#0d5b3a;font-weight:700}
   .btn.warn{background:var(--warn);color:#432; border-color:#a77}
-  .btn.ghost{background:#0a121a;border-color:#1d2a38}
   .kpi{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px}
   .tile{background:#0a121a;border:1px solid #1d2a38;border-radius:16px;padding:14px;text-align:center}
   .tile h3{margin:4px 0 0;font-size:24px}
   .tile span{font-size:12px;color:var(--muted)}
-  .muted{color:var(--muted)}
   .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:24px;background:#0f1b23;padding:10px 14px;border-radius:10px;border:1px solid #1f2f3a;box-shadow:0 6px 20px rgba(0,0,0,.4);display:none;z-index:999}
+  table{width:100%;border-collapse:collapse;margin-top:10px}
+  th,td{border:1px solid #203040;padding:6px;text-align:center;font-size:13px}
+  th{background:#121820;color:var(--accent)}
 </style>
 </head>
 <body>
 <div class="wrap">
   <header>
-    <h1>YouMOVE – Deine Gelenkbewegung: privat, souverän und vollkommen cloudfrei </h1>
+    <h1>YouMOVE – Deine Gelenkbewegung: privat, souverän und cloudfrei </h1>
     <div class="flex">
-      <button id="btnEnable" class="btn ghost">Enable Sensors</button>
-      <button id="btnCalibrate" class="btn ghost">Set Zero</button>
-      <button id="btnResetMinMax" class="btn ghost">Reset Min/Max</button>
+      <button id="btnEnable" class="btn primary">Enable Sensors</button>
+      <button id="btnCalibrate" class="btn">Set Zero</button>
+      <button id="btnResetMinMax" class="btn warn">Reset Min/Max</button>
     </div>
   </header>
 
@@ -88,34 +89,30 @@
       <div class="tile"><span>Joint / Rest</span><h3 id="jointRest">—</h3></div>
     </div>
     <div class="flex" style="margin-top:10px;">
-      <button id="btnStart" class="btn primary">Start</button>
+      <button id="btnStart" class="btn primary">Start Session</button>
       <button id="btnStop" class="btn warn">Stop</button>
-      <button id="btnSave" class="btn">Save</button>
       <span class="pill right" id="sensorStatus">Sensors: idle</span>
     </div>
   </div>
 
-  <div class="card">
-    <strong>Manual Mode</strong>
-    <div class="row" style="margin-top:8px;">
-      <div>
-        <label>Set angle manually (°)</label>
-        <input id="manualAngle" type="text" placeholder="e.g., 92.5">
-      </div>
-      <div class="flex" style="align-items:flex-end">
-        <button id="btnApplyManual" class="btn">Apply</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Live Chart Card -->
+  <!-- Live Chart -->
   <div class="card">
     <strong>Live Session Chart</strong>
     <canvas id="liveChart" style="width:100%;height:200px;margin-top:8px;"></canvas>
-    <div class="hint">This chart displays live angles during your session. It shows the mean value as a dashed line.</div>
+    <div class="hint">Live angles with mean (dashed line)</div>
   </div>
 
-  <div class="toast" id="toast"></div>
+  <!-- Saved session table -->
+  <div class="card">
+    <strong>Saved Sessions</strong>
+    <button id="btnExport" class="btn primary" style="margin-top:6px;">Export CSV</button>
+    <table>
+      <thead>
+        <tr><th>Timestamp</th><th>Joint</th><th>Plane</th><th>Side</th><th>Angle (°)</th><th>Mean (°)</th></tr>
+      </thead>
+      <tbody id="savedSessions"></tbody>
+    </table>
+  </div>
 
   <!-- Disclaimer -->
   <div class="card">
@@ -148,18 +145,18 @@
     btnResetMinMax: document.getElementById('btnResetMinMax'),
     btnStart: document.getElementById('btnStart'),
     btnStop: document.getElementById('btnStop'),
-    btnSave: document.getElementById('btnSave'),
     joint: document.getElementById('joint'),
     plane: document.getElementById('plane'),
     side: document.getElementById('side'),
     notes: document.getElementById('notes'),
-    manualAngle: document.getElementById('manualAngle'),
-    btnApplyManual: document.getElementById('btnApplyManual'),
+    savedSessions: document.getElementById('savedSessions'),
+    btnExport: document.getElementById('btnExport'),
     toast: document.getElementById('toast')
   };
 
   let running=false, zero=0, min=Infinity, max=-Infinity, currentAngle=0, listenerAdded=false;
   let sessionSamples=[];
+  let autoSaveInterval=null;
 
   function showToast(txt, ms=1200){ ui.toast.textContent=txt; ui.toast.style.display='block'; setTimeout(()=>ui.toast.style.display='none', ms); }
 
@@ -179,7 +176,7 @@
       showToast('Sensors enabled');
     }catch{
       ui.sensorStatus.textContent='Sensors: blocked';
-      showToast('Permission denied, use manual mode');
+      showToast('Permission denied, use fallback');
     }
   }
 
@@ -215,17 +212,19 @@
   }
 
   ui.btnEnable.addEventListener('click', enableSensors);
-  ui.btnStart.addEventListener('click', ()=>{ running=true; showToast('Measuring…'); });
-  ui.btnStop.addEventListener('click', ()=>{ running=false; showToast('Stopped'); });
+  ui.btnStart.addEventListener('click', ()=>{
+    if(!listenerAdded) enableSensors();
+    running=true;
+    showToast('Session started');
+    autoSaveInterval = setInterval(autoSave, 20000);
+  });
+  ui.btnStop.addEventListener('click', ()=>{
+    running=false;
+    showToast('Session stopped');
+    clearInterval(autoSaveInterval);
+  });
   ui.btnResetMinMax.addEventListener('click', ()=>{ min=Infinity; max=-Infinity; updateKPI(); showToast('Min/Max reset'); });
   ui.btnCalibrate.addEventListener('click', ()=>{ zero=currentAngle; updateKPI(); showToast('Zero set'); });
-  ui.btnApplyManual.addEventListener('click', ()=>{
-    const v=parseFloat(ui.manualAngle.value.replace(',','.'));
-    if(isNaN(v)){ return alert('Enter valid number'); }
-    currentAngle=v; if(v>max) max=v; if(v<min) min=v;
-    sessionSamples.push(v); updateKPI();
-    updateLiveChart();
-  });
 
   // Chart.js setup
   const ctx = document.getElementById('liveChart').getContext('2d');
@@ -262,6 +261,29 @@
     liveChart.data.datasets[1].data = meanLine;
     liveChart.update();
   }
+
+  function autoSave(){
+    if(!sessionSamples.length) return;
+    const mean = sessionSamples.reduce((a,b)=>a+b,0)/sessionSamples.length;
+    const row = document.createElement('tr');
+    const ts = new Date().toLocaleTimeString();
+    row.innerHTML = `<td>${ts}</td><td>${ui.joint.value}</td><td>${ui.plane.value}</td><td>${ui.side.value}</td><td>${currentAngle.toFixed(1)}</td><td>${mean.toFixed(1)}</td>`;
+    ui.savedSessions.appendChild(row);
+    sessionSamples=[]; // reset session buffer
+  }
+
+  ui.btnExport.addEventListener('click', ()=>{
+    let csv='Timestamp,Joint,Plane,Side,Angle,Mean\n';
+    ui.savedSessions.querySelectorAll('tr').forEach(r=>{
+      const cells = Array.from(r.children).map(c=>c.textContent);
+      csv+=cells.join(',')+'\n';
+    });
+    const blob = new Blob([csv], {type:'text/csv'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href=url; a.download='sessions.csv'; a.click();
+    URL.revokeObjectURL(url);
+  });
 
 })();
 </script>
