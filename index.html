@@ -3,9 +3,9 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
-<title>ROM Tracker – Local Range of Motion (Enhanced)</title>
+<title>ROM Tracker – MeineMOVE (Enhanced)</title>
 <style>
-  :root { --bg:#0b1016; --card:#121820; --muted:#8aa0b2; --text:#eaf2f8; --accent:#50c878; --danger:#ff6b6b; --warn:#ffc857; }
+  :root { --bg:#0b1016; --card:#121820; --muted:#8aa0b2; --text:#eaf2f8; --accent:#50c878; --danger:#ff6b6b; --warn:#ffc857; --flash:#50c878; }
   *{box-sizing:border-box;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
   body{margin:0;background:linear-gradient(180deg,#0b1016,#0e141c);color:var(--text)}
   .wrap{max-width:960px;margin:0 auto;padding:16px 14px 40px}
@@ -37,14 +37,18 @@
   .small{font-size:12px}
   .separator{height:1px;background:#203040;margin:10px 0;border-radius:1px}
   button:focus{ outline:3px solid rgba(80,200,120,0.18); outline-offset:2px; }
-  .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:24px;background:#0f1b23;padding:10px 14px;border-radius:10px;border:1px solid #1f2f3a;box-shadow:0 6px 20px rgba(0,0,0,.4);display:none}
-  .sparkline{height:48px;width:100%;border-radius:8px;background:linear-gradient(180deg,#081017,#071017);display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:12px}
+  .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:24px;background:#0f1b23;padding:10px 14px;border-radius:10px;border:1px solid #1f2f3a;box-shadow:0 6px 20px rgba(0,0,0,.4);display:none;z-index:999}
+  .sparkline{height:48px;width:100%;border-radius:8px;background:linear-gradient(180deg,#081017,#071017);display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:12px;position:relative}
+  .sparkline .countdown{position:absolute;left:12px;font-size:12px;color:var(--muted)}
+  .sparkline .flash{position:absolute;right:12px;width:10px;height:10px;border-radius:50%;opacity:0;transition:opacity .18s ease, transform .18s ease}
+  .sparkline.flashging { box-shadow:0 0 18px rgba(80,200,120,0.12); }
+  .sparkline.flashging .flash { background:var(--flash); opacity:1; transform:scale(1.1); }
 </style>
 </head>
 <body>
 <div class="wrap">
   <header>
-    <h1>MeineMOVE – Gelenkbewegung Privat, offline, ohne Cloud speichern </h1>
+    <h1>MeineMOVE – Gelenkbewegung Privat, offline, ohne Cloud speichern</h1>
     <div class="flex">
       <button id="btnEnable" class="btn ghost" aria-label="Enable sensors">Enable Sensors</button>
       <button id="btnCalibrate" class="btn ghost" aria-label="Set zero (calibrate)">Set Zero</button>
@@ -170,13 +174,26 @@
         <label>Sample rate (Hz)</label>
         <input id="sampleRate" type="number" min="1" max="60" value="25" step="1" aria-label="Sample rate">
       </div>
+      <div>
+        <label>Auto-Record Interval</label>
+        <select id="autoInterval" aria-label="Auto record interval">
+          <option value="0" selected>No auto-record</option>
+          <option value="10">Every 10 sec</option>
+          <option value="20">Every 20 sec</option>
+          <option value="30">Every 30 sec</option>
+        </select>
+      </div>
       <div class="flex" style="align-items:flex-end">
         <button id="btnStartSession" class="btn primary" aria-label="Start session recording">Start Session</button>
         <button id="btnStopSession" class="btn warn" aria-label="Stop session recording">Stop Session</button>
       </div>
     </div>
-    <div style="margin-top:8px;" class="sparkline" id="sparkline">No session yet</div>
-    <div class="hint">Session mode captures continuous time-series (timestamp + angle) and saves it as a single record. Export session CSV separately.</div>
+    <div style="margin-top:8px;" class="sparkline" id="sparkline">
+      <span class="countdown" id="countdown"> </span>
+      <span id="sparkText">No session yet</span>
+      <span class="flash" id="sparkFlash"></span>
+    </div>
+    <div class="hint">Session mode captures continuous time-series (timestamp + angle) and saves it as a single record. Export session CSV separately. When Auto-Record interval is set, the app will save a snapshot at that interval while session is active.</div>
   </div>
 
  <p class="muted small" style="margin-top:12px;">
@@ -224,7 +241,11 @@
     btnStartSession: document.getElementById('btnStartSession'),
     btnStopSession: document.getElementById('btnStopSession'),
     sparkline: document.getElementById('sparkline'),
+    sparkText: document.getElementById('sparkText'),
+    sparkFlash: document.getElementById('sparkFlash'),
     toast: document.getElementById('toast'),
+    autoInterval: document.getElementById('autoInterval'),
+    countdown: document.getElementById('countdown')
   };
 
   // State
@@ -241,6 +262,12 @@
   let sessionSamples = [];
   let sessionTimer = null;
 
+  // Auto-record timer for interval snapshots
+  let autoRecordTimer = null;
+  // Countdown timer that updates UI and triggers saves
+  let countdownTimer = null;
+  let nextSaveDeadline = null;
+
   // Storage
   const KEY = 'rom-tracker-records-v1';
   function loadRecords(){
@@ -253,7 +280,7 @@
     const d = new Date(ts);
     return d.toLocaleString();
   }
-  function showToast(txt, ms=1800){
+  function showToast(txt, ms=1200){
     ui.toast.textContent = txt; ui.toast.style.display = 'block';
     clearTimeout(ui.toast._t);
     ui.toast._t = setTimeout(()=> ui.toast.style.display = 'none', ms);
@@ -406,6 +433,29 @@
     min = Infinity; max = -Infinity; ui.min.textContent='—'; ui.max.textContent='—'; showToast('Min/Max reset');
   });
 
+  // Helper: save current measurement (reusable for manual, auto-interval or button)
+  function saveCurrentRecord(auto=false){
+    const rec = {
+      id: uuidv4(),
+      time: Date.now(),
+      joint: ui.joint.value,
+      side: ui.side.value,
+      plane: ui.plane.options[ui.plane.selectedIndex].text,
+      angle: Number.isFinite(currentAngle) ? Number(currentAngle.toFixed(2)) : null,
+      min: isFinite(min) ? Number(min.toFixed(2)) : null,
+      max: isFinite(max) ? Number(max.toFixed(2)) : null,
+      zero: Number.isFinite(zero) ? Number(zero.toFixed(2)) : null,
+      notes: ui.notes.value.trim(),
+      session: null // reserved for session records
+    };
+    const arr = loadRecords(); arr.unshift(rec); saveRecords(arr); refreshTable();
+    if (auto) {
+      flashSparkline(); showToast('Auto-saved ✓', 900);
+    } else {
+      showToast('Saved');
+    }
+  }
+
   ui.btnStart.addEventListener('click', ()=>{
     if (!listenerAdded){ window.addEventListener('deviceorientation', onOrient, true); listenerAdded=true; }
     running = true;
@@ -422,22 +472,7 @@
     if (listenerAdded){ window.removeEventListener('deviceorientation', onOrient, true); listenerAdded=false; }
   });
 
-  ui.btnSave.addEventListener('click', ()=>{
-    const rec = {
-      id: uuidv4(),
-      time: Date.now(),
-      joint: ui.joint.value,
-      side: ui.side.value,
-      plane: ui.plane.options[ui.plane.selectedIndex].text,
-      angle: Number.isFinite(currentAngle) ? Number(currentAngle.toFixed(2)) : null,
-      min: isFinite(min) ? Number(min.toFixed(2)) : null,
-      max: isFinite(max) ? Number(max.toFixed(2)) : null,
-      zero: Number.isFinite(zero) ? Number(zero.toFixed(2)) : null,
-      notes: ui.notes.value.trim(),
-      session: null // reserved for session records
-    };
-    const arr = loadRecords(); arr.unshift(rec); saveRecords(arr); refreshTable(); ui.btnSave.textContent='Saved ✓'; setTimeout(()=> ui.btnSave.textContent='Save Record',700);
-  });
+  ui.btnSave.addEventListener('click', ()=>{ saveCurrentRecord(false); ui.btnSave.textContent='Saved ✓'; setTimeout(()=> ui.btnSave.textContent='Save Record',700); });
 
   // Export all records (CSV with BOM)
   ui.btnExport.addEventListener('click', ()=>{
@@ -477,17 +512,56 @@
     ui.min.textContent = isFinite(min) ? min.toFixed(1) : '—';
   });
 
+  // Auto-record functions (session-only)
+  function startAutoCountdownIfNeeded(){
+    stopAutoCountdown();
+    const sec = Number(ui.autoInterval.value || 0);
+    if (sec > 0 && sessionRecording){
+      // set next deadline and start countdown timer
+      nextSaveDeadline = Date.now() + sec * 1000;
+      countdownTimer = setInterval(()=>{
+        const remMs = nextSaveDeadline - Date.now();
+        const rem = Math.ceil(remMs / 1000);
+        ui.countdown.textContent = `Next save in ${rem}s`;
+        ui.sparkText.textContent = `Recording — ${rem}s`;
+        if (remMs <= 0){
+          // trigger auto-save snapshot
+          saveCurrentRecord(true);
+          // schedule next
+          nextSaveDeadline = Date.now() + sec * 1000;
+        }
+      }, 250);
+      // small visual class to show an active countdown
+      ui.sparkline.classList.add('flashging');
+    }
+  }
+
+  function stopAutoCountdown(){
+    if (countdownTimer){ clearInterval(countdownTimer); countdownTimer = null; }
+    ui.countdown.textContent = '';
+    ui.sparkText.textContent = sessionRecording ? 'Recording…' : 'No session yet';
+    ui.sparkline.classList.remove('flashging');
+  }
+
+  function flashSparkline(){
+    // briefly flash sparkline "dot"
+    ui.sparkFlash.style.opacity = '1';
+    setTimeout(()=>{ ui.sparkFlash.style.opacity = '0'; }, 400);
+  }
+
   // Session recording
   ui.btnStartSession.addEventListener('click', ()=>{
     if (!listenerAdded){ window.addEventListener('deviceorientation', onOrient, true); listenerAdded=true; }
     sessionRecording = true; sessionSamples = [];
-    ui.sparkline.textContent = 'Recording…';
+    ui.sparkText.textContent = 'Recording…';
     showToast('Session recording started');
+    startAutoCountdownIfNeeded();
   });
 
   ui.btnStopSession.addEventListener('click', ()=>{
     if (!sessionRecording){ showToast('No active session'); return; }
     sessionRecording = false;
+    stopAutoCountdown();
     // save session as a record
     const rec = {
       id: uuidv4(), time: Date.now(), joint: ui.joint.value, side: ui.side.value,
@@ -504,15 +578,18 @@
       const blob = new Blob([bom + lines.join('\n')], {type:'text/csv;charset=utf-8;'});
       const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href=url; a.download = `session_${new Date().toISOString().replace(/[:.]/g,'-')}.csv`; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
     }
-    ui.sparkline.textContent = 'Session saved';
+    ui.sparkText.textContent = 'Session saved';
     showToast('Session saved');
   });
 
+  // If user changes interval during active session, restart countdown
+  ui.autoInterval.addEventListener('change', ()=>{ if (sessionRecording) { startAutoCountdownIfNeeded(); } });
+
   function updateSparkline(){
-    if (!sessionSamples.length){ ui.sparkline.textContent = 'No session yet'; return; }
+    if (!sessionSamples.length){ ui.sparkText.textContent = 'No session yet'; ui.countdown.textContent=''; return; }
     // simple textual sparkline: last 20 values
     const last = sessionSamples.slice(-20).map(s=>s.angle);
-    ui.sparkline.textContent = last.map(v=>Math.round(v)).join(' • ');
+    ui.sparkText.textContent = last.map(v=>Math.round(v)).join(' • ');
   }
 
   // keyboard shortcuts: Space => Start/Stop; C => calibrate
@@ -527,6 +604,7 @@
   // ensure we cleanup before unload
   window.addEventListener('beforeunload', ()=>{
     if (listenerAdded) window.removeEventListener('deviceorientation', onOrient, true);
+    stopAutoCountdown();
   });
 
 })();
