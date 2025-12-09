@@ -1,541 +1,307 @@
-<!DOCTYPE html>
-<html lang="de">
-<head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>ROM Tracker – YouMOVE</title>
+import React, { useEffect, useRef, useState } from "react";
+import { Chart, LineController, LineElement, PointElement, LinearScale, TimeScale, Title, Tooltip, Legend, Filler } from 'chart.js';
+import 'chartjs-adapter-moment';
 
-<!-- Styles (mobile-first, touch-friendly) -->
-<style>
-  :root{
-    --bg:#0b1016; --card:#121820; --muted:#8aa0b2; --text:#eaf2f8;
-    --accent:#50c878; --warn:#ffc857; --card-ink:#a9bfd2;
-  }
-  *{box-sizing:border-box}
-  html,body{height:100%}
-  body{
-    margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;
-    background:linear-gradient(180deg,#0b1016,#0e141c); color:var(--text);
-    -webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;
-  }
-  .wrap{max-width:980px;margin:0 auto;padding:14px;display:flex;flex-direction:column;gap:12px}
-  header{display:flex;flex-direction:column;gap:10px}
-  header .top{display:flex;justify-content:space-between;align-items:center;gap:12px}
-  h1{font-size:18px;margin:0}
-  .controls{display:flex;gap:8px;flex-wrap:wrap}
-  button{padding:12px;border-radius:12px;border:1px solid #203040;background:#0b1118;color:var(--text);font-size:15px;cursor:pointer}
-  .btn{display:inline-flex;align-items:center;justify-content:center}
-  .btn.primary{background:var(--accent);color:#072d19;border-color:#0d5b3a;font-weight:700}
-  .btn.warn{background:var(--warn);color:#432;border-color:#a77}
-  .card{background:var(--card);border:1px solid #1d2732;border-radius:14px;padding:12px;box-shadow:0 8px 32px rgba(0,0,0,.35)}
-  label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px}
-  select,input{width:100%;padding:10px;border-radius:10px;border:1px solid #203040;background:#0b1118;color:var(--text);font-size:15px}
-  .row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-  .kpi{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-  .tile{background:#08101a;border:1px solid #16222c;border-radius:12px;padding:10px;text-align:center}
-  .tile span{font-size:12px;color:var(--muted);display:block}
-  .tile h3{margin:6px 0 0;font-size:18px}
-  canvas{width:100%!important;height:180px!important;display:block;border-radius:8px}
-  table{width:100%;border-collapse:collapse;color:var(--card-ink);font-size:13px}
-  th,td{padding:8px;border-bottom:1px solid #16222c;text-align:left}
-  th{font-weight:600;color:var(--accent);background:#081116}
-  .hint{font-size:12px;color:var(--muted);margin-top:6px}
-  .pill{display:inline-block;padding:6px 10px;border-radius:999px;background:#081216;border:1px solid #16222c;font-size:13px}
-  /* responsive */
-  @media(min-width:720px){
-    header{flex-direction:row;align-items:center}
-    .kpi{grid-template-columns:repeat(6,1fr)}
-    .row{grid-template-columns:repeat(2,1fr)}
-  }
-  .select-voice { width:180px; padding:8px; border-radius:8px; background:#071014; color:var(--text); border:1px solid #203040; }
-</style>
+Chart.register(LineController, LineElement, PointElement, LinearScale, TimeScale, Title, Tooltip, Legend, Filler);
 
-<!-- Chart + adapter -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/moment@2.29.4/moment.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-moment@1.0.0"></script>
-</head>
-<body>
-<div class="wrap">
+export default function YouMoveApp(){
+  // UI state
+  const [listenerAdded, setListenerAdded] = useState(false);
+  const [running, setRunning] = useState(false);
+  const [zero, setZero] = useState(0);
+  const [minVal, setMinVal] = useState(Infinity);
+  const [maxVal, setMaxVal] = useState(-Infinity);
+  const [currentAngle, setCurrentAngle] = useState(NaN);
+  const [savedRecords, setSavedRecords] = useState([]);
+  const [sensorStatus, setSensorStatus] = useState('idle');
 
-  <header>
-    <div class="top">
-      <h1>YouMOVE — Live ROM Tracker (offline)</h1>
-      <div style="display:flex;gap:8px;align-items:center">
-        <div class="controls">
-          <button id="btnEnable" class="btn primary">Enable Sensors</button>
-          <button id="btnCalibrate" class="btn">Set Zero</button>
-          <button id="btnResetMinMax" class="btn">Reset Min/Max</button>
-        </div>
-        <!-- Voice preference selector -->
-        <label style="margin:0 0 0 8px;color:var(--muted);font-size:13px">TTS preference</label>
-        <select id="voicePref" class="select-voice" aria-label="Speech language preference">
-          <option value="en,de,es">English → German → Spanish</option>
-          <option value="de,en,es">German → English → Spanish</option>
-          <option value="es,en,de">Spanish → English → German</option>
-        </select>
-      </div>
-    </div>
-    <div class="hint">Open on a mobile device with motion sensors. On iOS, tap <strong>Enable Sensors</strong> and allow Motion & Orientation access.</div>
-  </header>
+  // controls
+  const jointRef = useRef('Shoulder');
+  const planeRef = useRef('beta');
+  const sideRef = useRef('Right');
 
-  <!-- selections -->
-  <div class="card">
-    <div class="row">
-      <div>
-        <label for="joint">Joint</label>
-        <select id="joint" aria-label="Joint">
-          <option>Shoulder</option><option>Elbow</option><option>Wrist</option>
-          <option>Hip</option><option>Knee</option><option>Ankle</option><option>Rest</option>
-        </select>
-      </div>
-      <div>
-        <label for="plane">Plane / Movement</label>
-        <select id="plane" aria-label="Plane">
-          <option value="beta">Flexion/Extension (β)</option>
-          <option value="gamma">Abduction/Adduction (γ)</option>
-          <option value="alpha">Rotation (α)</option>
-        </select>
-      </div>
-    </div>
-    <div style="margin-top:8px">
-      <label for="side">Side</label>
-      <select id="side" aria-label="Side">
-        <option>Right</option><option>Left</option><option>Midline</option>
-      </select>
-    </div>
-  </div>
+  // TTS & audio
+  const [ttsMode, setTtsMode] = useState('chime'); // off | chime | speak
+  const [voicePref, setVoicePref] = useState('en,de,es');
+  const [voices, setVoices] = useState([]);
+  const [selectedVoice, setSelectedVoice] = useState('');
+  const volRef = useRef(0.9);
 
-  <!-- KPIs + controls -->
-  <div class="card">
-    <div class="kpi" aria-hidden="false">
-      <div class="tile"><span>Angle (°)</span><h3 id="angle">—</h3></div>
-      <div class="tile"><span>Max (°)</span><h3 id="max">—</h3></div>
-      <div class="tile"><span>Min (°)</span><h3 id="min">—</h3></div>
-      <div class="tile"><span>Zero Ref (°)</span><h3 id="zero">—</h3></div>
-      <div class="tile"><span>Mean (°)</span><h3 id="mean">—</h3></div>
-      <div class="tile"><span>Mode</span><h3 id="jointRest">—</h3></div>
-    </div>
+  // buffers
+  const sessionBufferRef = useRef([]); // samples for current auto-save window
+  const chartBufferRef = useRef([]);   // rolling buffer for chart
 
-    <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
-      <button id="btnStart" class="btn primary">Start Session</button>
-      <button id="btnStop" class="btn warn">Stop Session</button>
-      <button id="btnExport" class="btn">Export CSV</button>
-      <div class="pill" id="sensorStatus">Sensors: idle</div>
-    </div>
-    <div class="hint">Sessions auto-save every 20 seconds and are spoken aloud in your preferred language (English/German/Spanish).</div>
-  </div>
-
-  <!-- chart -->
-  <div class="card">
-    <strong>Live Session Chart (last 30s)</strong>
-    <canvas id="liveChart" aria-label="Live angle chart"></canvas>
-  </div>
-
-  <!-- saved -->
-  <div class="card">
-    <strong>Saved Sessions</strong>
-    <div style="overflow:auto;margin-top:8px;">
-      <table id="savedSessionsTable" aria-label="Saved sessions table">
-        <thead>
-          <tr><th>Timestamp</th><th>Joint</th><th>Plane</th><th>Side</th><th>Angle</th><th>Mean</th></tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-    </div>
-  </div>
-
-  <!-- legal -->
-  <div class="card">
-    <p style="color:var(--muted);font-size:13px;margin:0;">
-      <strong>Disclaimer:</strong> This tool is intended for screening, exercise guidance, and documentation support. It does not replace clinical judgment or certified goniometry.<br>
-      <strong>Contact:</strong> <a href="mailto:mostischmidbauer@web.de">mostischmidbauer@web.de</a>
-    </p>
-  </div>
-
-</div>
-
-<!-- minimal toast -->
-<div id="toast" style="position:fixed;left:50%;transform:translateX(-50%);bottom:16px;background:#072027;padding:8px 12px;border-radius:10px;color:#dff6ea;display:none;z-index:999"></div>
-
-<!-- libs already loaded above -->
-<script>
-(() => {
-  // UI refs
-  const ui = {
-    angle: document.getElementById('angle'),
-    max: document.getElementById('max'),
-    min: document.getElementById('min'),
-    zero: document.getElementById('zero'),
-    mean: document.getElementById('mean'),
-    jointRest: document.getElementById('jointRest'),
-    btnEnable: document.getElementById('btnEnable'),
-    btnCalibrate: document.getElementById('btnCalibrate'),
-    btnResetMinMax: document.getElementById('btnResetMinMax'),
-    btnStart: document.getElementById('btnStart'),
-    btnStop: document.getElementById('btnStop'),
-    btnExport: document.getElementById('btnExport'),
-    joint: document.getElementById('joint'),
-    plane: document.getElementById('plane'),
-    side: document.getElementById('side'),
-    sensorStatus: document.getElementById('sensorStatus'),
-    savedBody: document.querySelector('#savedSessionsTable tbody'),
-    toast: document.getElementById('toast'),
-    chartCanvas: document.getElementById('liveChart'),
-    voicePref: document.getElementById('voicePref')
-  };
-
-  // state
-  let running = false;
-  let listenerAdded = false;
-  let zero = 0;
-  let minVal = Infinity, maxVal = -Infinity;
-  let currentAngle = 0;
-  const sessionSamples = [];   // samples used to compute mean for current auto-save window
-  const chartData = [];        // master buffer for chart (kept rolling)
-  const savedRecords = [];     // saved rows for export
+  // chart
+  const chartRef = useRef(null);
+  const chartInstanceRef = useRef(null);
   const LIVE_WINDOW_SEC = 30;
-  const AUTO_SAVE_MS = 20000; // 20 seconds
-  let autoSaveTimer = null;
+  const AUTO_SAVE_MS = 20000;
+  const autoSaveTimerRef = useRef(null);
 
-  // speech voices
-  let VOICES = [];
-  let voicesLoaded = false;
-
-  // preferred language order default: English, German, Spanish
-  function getPreferredLangOrder(){
-    // ui.voicePref value is a CSV like 'en,de,es'
-    return (ui.voicePref.value || 'en,de,es').split(',').map(s => s.trim().toLowerCase());
+  // helper: toast (simple)
+  const toastRef = useRef(null);
+  function toast(msg, ms=1400){
+    if(!toastRef.current) return;
+    toastRef.current.textContent = msg;
+    toastRef.current.style.opacity = '1';
+    clearTimeout((toastRef.current)._t);
+    (toastRef.current)._t = setTimeout(()=>{ if(toastRef.current) toastRef.current.style.opacity='0'; }, ms);
   }
 
-  // load voices (handles async voiceschanged)
-  function loadVoices(){
-    VOICES = window.speechSynthesis.getVoices() || [];
-    if(VOICES.length) {
-      voicesLoaded = true;
+  // load voices
+  useEffect(()=>{
+    if(!('speechSynthesis' in window)) return;
+    function load(){
+      const v = window.speechSynthesis.getVoices();
+      setVoices(v || []);
     }
-  }
-  // attempt to load voices and listen for change
-  loadVoices();
-  if('speechSynthesis' in window){
-    window.speechSynthesis.onvoiceschanged = () => {
-      loadVoices();
-    };
-  }
+    load();
+    window.speechSynthesis.onvoiceschanged = load;
+    return ()=>{ window.speechSynthesis.onvoiceschanged = null; };
+  },[]);
 
-  // pick a voice matching preferred languages (array of lang prefixes)
-  function pickVoice(preferredLangs){
-    if(!voicesLoaded) loadVoices();
-    // try exact/lang-start matches in order
-    for(const pref of preferredLangs){
-      // prefer exact regional match first (e.g., en-US)
-      let v = VOICES.find(v => v.lang && v.lang.toLowerCase().startsWith(pref + '-'));
-      if(v) return v;
-      // otherwise any that starts with prefix
-      v = VOICES.find(v => v.lang && v.lang.toLowerCase().startsWith(pref));
-      if(v) return v;
-    }
-    // fallback: first voice that is not Arabic ideally
-    let fallback = VOICES.find(v => v.lang && !v.lang.toLowerCase().startsWith('ar'));
-    return fallback || VOICES[0] || null;
-  }
-
-  // speak text using preferred languages (or user selected order)
-  function speakText(text){
-    if(!('speechSynthesis' in window) || !text) return;
-    // ensure voices list available
-    if(!voicesLoaded) loadVoices();
-    const langOrder = getPreferredLangOrder();
-    const voice = pickVoice(langOrder);
-
-    try{
-      window.speechSynthesis.cancel();
-      const u = new SpeechSynthesisUtterance(text);
-      u.rate = 1.0;
-      u.pitch = 1.0;
-      if(voice){
-        u.voice = voice;
-        u.lang = voice.lang || (langOrder[0] || 'en');
-      } else {
-        u.lang = langOrder[0] || 'en';
-      }
-      window.speechSynthesis.speak(u);
-    }catch(e){
-      console.warn('TTS error', e);
-    }
-  }
-
-  // tiny toast
-  function toast(msg, ms=1500){
-    ui.toast.textContent = msg; ui.toast.style.display='block';
-    clearTimeout(ui._t); ui._t = setTimeout(()=> ui.toast.style.display='none', ms);
-  }
-
-  // Chart.js initialization (dataset.data uses {x:Date, y:number})
-  const chart = new Chart(ui.chartCanvas.getContext('2d'), {
-    type: 'line',
-    data: { datasets: [
-      { label: 'Angle (°)', data: [], borderColor:'#50c878', backgroundColor:'rgba(80,200,120,0.08)', pointRadius:0, tension:0.15 },
-      { label: 'Mean', data: [], borderColor:'#ffc857', borderDash:[6,4], pointRadius:0, fill:false, tension:0 }
-    ]},
-    options: {
-      animation: false,
-      responsive: true,
-      interaction: { mode: 'index', intersect: false },
-      stacked: false,
-      scales: {
-        x: {
-          type: 'time',
-          time: { tooltipFormat: 'YYYY-MM-DD HH:mm:ss', unit: 'second', displayFormats: { second: 'HH:mm:ss' } },
-          ticks: { autoSkip: true, maxTicksLimit: 6 }
+  // chart init
+  useEffect(()=>{
+    const ctx = chartRef.current.getContext('2d');
+    chartInstanceRef.current = new Chart(ctx, {
+      type: 'line',
+      data: { datasets: [
+        { label: 'Angle (°)', data: [], borderColor:'#50c878', backgroundColor:'rgba(80,200,120,0.08)', pointRadius:0, tension:0.15 },
+        { label: 'Mean', data: [], borderColor:'#ffc857', borderDash:[6,4], pointRadius:0, fill:false, tension:0 }
+      ]},
+      options: {
+        animation:false,
+        responsive:true,
+        interaction:{mode:'index',intersect:false},
+        scales:{
+          x:{ type:'time', time:{ tooltipFormat:'YYYY-MM-DD HH:mm:ss', unit:'second', displayFormats:{second:'HH:mm:ss'} }, ticks:{autoSkip:true,maxTicksLimit:6} },
+          y:{ beginAtZero:false }
         },
-        y: { beginAtZero: false }
-      },
-      plugins: { legend: { display: true } }
-    }
-  });
+        plugins:{legend:{display:true}}
+      }
+    });
+    return ()=>{ chartInstanceRef.current?.destroy(); };
+  },[]);
 
-  // helper: keep chartData as rolling buffer (e.g., last 10 minutes) to avoid memory growth
-  function pushToChart(time, value){
-    chartData.push({x: time, y: value});
+  // utility: push chart point (rolling)
+  function pushChartPoint(time, value){
+    const buf = chartBufferRef.current;
+    buf.push({x: time, y: value});
     const cutoff = new Date(Date.now() - 10*60*1000);
-    while(chartData.length && chartData[0].x < cutoff) chartData.shift();
+    while(buf.length && buf[0].x < cutoff) buf.shift();
   }
 
-  function updateKPIs(){
-    ui.angle.textContent = Number.isFinite(currentAngle) ? currentAngle.toFixed(1) : '—';
-    ui.min.textContent = isFinite(minVal) ? minVal.toFixed(1) : '—';
-    ui.max.textContent = isFinite(maxVal) ? maxVal.toFixed(1) : '—';
-    ui.zero.textContent = Number.isFinite(zero) ? zero.toFixed(1) : '—';
-    const mean = sessionSamples.length ? sessionSamples.reduce((s,a)=>s+a.value,0)/sessionSamples.length : NaN;
-    ui.mean.textContent = sessionSamples.length ? mean.toFixed(1) : '—';
-    ui.jointRest.textContent = ui.joint.value.includes('Rest') ? 'Rest' : 'Active';
-  }
-
-  // update chart with rolling window
   function refreshChart(){
     const now = new Date();
     const windowStart = new Date(now.getTime() - LIVE_WINDOW_SEC*1000);
-    const visible = chartData.filter(pt => pt.x >= windowStart);
-    const values = visible.map(pt => pt.y);
+    const visible = chartBufferRef.current.filter(pt=>pt.x >= windowStart);
+    const values = visible.map(pt=>pt.y);
     const meanVal = values.length ? values.reduce((a,b)=>a+b,0)/values.length : NaN;
-    chart.data.datasets[0].data = visible;
-    chart.data.datasets[1].data = visible.map(pt => ({x: pt.x, y: meanVal}));
-    chart.update('none');
+    const inst = chartInstanceRef.current;
+    if(!inst) return;
+    inst.data.datasets[0].data = visible;
+    inst.data.datasets[1].data = visible.map(pt=>({x:pt.x,y:meanVal}));
+    inst.update('none');
   }
 
-  // sensor handler
-  function onDeviceOrientation(e){
+  // device orientation handler
+  function deviceHandler(e){
     if(!running) return;
-    const a = (typeof e.alpha === 'number') ? e.alpha : 0;
-    const b = (typeof e.beta === 'number') ? e.beta : 0;
-    const g = (typeof e.gamma === 'number') ? e.gamma : 0;
+    const a = (typeof e.alpha==='number')?e.alpha:0;
+    const b = (typeof e.beta==='number')?e.beta:0;
+    const g = (typeof e.gamma==='number')?e.gamma:0;
     let raw = 0;
-    switch(ui.plane.value){
-      case 'alpha': raw = ((a + 540) % 360) - 180; break;
-      case 'beta': raw = b; break;
-      case 'gamma': raw = g; break;
-      default: raw = b;
-    }
+    const plane = planeRef.current;
+    if(plane === 'alpha') raw = ((a + 540) % 360) - 180;
+    else if(plane === 'beta') raw = b;
+    else raw = g;
     const adjusted = raw - zero;
     const wrapped = ((adjusted + 180) % 360) - 180;
-    currentAngle = wrapped;
-    if(wrapped > maxVal) maxVal = wrapped;
-    if(wrapped < minVal) minVal = wrapped;
+    setCurrentAngle(wrapped);
+    if(wrapped > maxVal) setMaxVal(wrapped);
+    if(wrapped < minVal) setMinVal(wrapped);
     const now = new Date();
-    sessionSamples.push({time: now, value: wrapped});
-    pushToChart(now, wrapped);
-    updateKPIs();
+    sessionBufferRef.current.push({time: now, value: wrapped});
+    pushChartPoint(now, wrapped);
     refreshChart();
   }
 
-  // sensor start: handles iOS permission flow
-  function enableSensors(){
-    if(!('DeviceOrientationEvent' in window)){
-      ui.sensorStatus.textContent = 'Sensors: not supported';
-      toast('DeviceOrientation not supported');
-      return;
-    }
-    if(typeof DeviceOrientationEvent.requestPermission === 'function'){
-      DeviceOrientationEvent.requestPermission().then(permissionState => {
-        if(permissionState === 'granted'){
-          attachListener();
-        } else {
-          ui.sensorStatus.textContent = 'Sensors: blocked';
-          toast('Permission denied for motion sensors');
-        }
-      }).catch(err => {
-        console.warn('Permission error', err);
-        ui.sensorStatus.textContent = 'Sensors: blocked';
-        toast('Permission request failed');
-      });
-    } else {
-      attachListener();
-    }
-  }
-
+  // attach sensor listener after permission
   function attachListener(){
     if(listenerAdded) return;
-    window.addEventListener('deviceorientation', onDeviceOrientation, {passive:true});
-    listenerAdded = true;
-    ui.sensorStatus.textContent = 'Sensors: ready';
-    toast('Sensors enabled — press Start Session');
-    // ensure voices loaded if user wants spoken feedback
-    if('speechSynthesis' in window) {
-      loadVoicesAsync();
+    window.addEventListener('deviceorientation', deviceHandler, {passive:true});
+    setListenerAdded(true);
+    setSensorStatus('ready');
+    toast('Sensors ready — press Start Session');
+  }
+
+  // permission flow invoked by user click
+  function handleEnableSensors(){
+    if(!('DeviceOrientationEvent' in window)){
+      setSensorStatus('not-supported'); toast('Device orientation not supported'); return;
     }
+    if(typeof DeviceOrientationEvent.requestPermission === 'function'){
+      DeviceOrientationEvent.requestPermission().then(p=>{
+        if(p === 'granted') attachListener(); else { setSensorStatus('blocked'); toast('Permission denied'); }
+      }).catch(err=>{ console.warn(err); setSensorStatus('blocked'); toast('Permission error'); });
+    } else attachListener();
   }
 
-  // async voices loader (ensures voices are loaded before pickVoice)
-  function loadVoicesAsync(){
-    return new Promise(resolve => {
-      loadVoices();
-      if(voicesLoaded) return resolve();
-      const handler = () => { loadVoices(); window.speechSynthesis.removeEventListener('voiceschanged', handler); resolve(); };
-      window.speechSynthesis.addEventListener('voiceschanged', handler);
-      // also set a timeout fallback
-      setTimeout(() => { loadVoices(); resolve(); }, 1000);
-    });
+  // audio: chime
+  const audioCtxRef = useRef(null);
+  useEffect(()=>{ if(window.AudioContext || window.webkitAudioContext) audioCtxRef.current = new (window.AudioContext || window.webkitAudioContext)(); },[]);
+  function playChime(vol=0.9){
+    const ctx = audioCtxRef.current; if(!ctx) return;
+    const now = ctx.currentTime;
+    const o = ctx.createOscillator(); const g = ctx.createGain();
+    o.type = 'sine'; o.frequency.setValueAtTime(880, now);
+    g.gain.setValueAtTime(0.0001, now);
+    g.gain.exponentialRampToValueAtTime(Math.max(0.01, vol*0.15), now + 0.005);
+    g.gain.exponentialRampToValueAtTime(0.0001, now + 0.25);
+    o.connect(g); g.connect(ctx.destination); o.start(now); o.stop(now + 0.27);
   }
 
-  function loadVoices(){
-    VOICES = window.speechSynthesis.getVoices() || [];
-    voicesLoaded = VOICES.length > 0;
-  }
+  // TTS
+  function loadVoices(){ if(!('speechSynthesis' in window)) return []; return window.speechSynthesis.getVoices() || []; }
+  useEffect(()=>{ setVoices(loadVoices()); if('speechSynthesis' in window) window.speechSynthesis.onvoiceschanged = ()=> setVoices(loadVoices()); },[]);
 
-  // auto-save routine (also speaks)
-  function autoSaveAction(){
-    if(!sessionSamples.length) return;
-    const mean = sessionSamples.reduce((s,a)=>s+a.value,0) / sessionSamples.length;
-    const last = sessionSamples[sessionSamples.length - 1];
-    const ts = new Date();
-    const rec = {
-      timestamp_iso: ts.toISOString(),
-      timestamp_local: ts.toLocaleString(),
-      joint: ui.joint.value,
-      plane: ui.plane.value,
-      side: ui.side.value,
-      angle: Number(last.value.toFixed(2)),
-      mean: Number(mean.toFixed(2))
-    };
-    savedRecords.push(rec);
-    appendSavedRow(rec);
-    // speak reading using preferred languages
-    const speakStr = `${rec.joint} ${rec.side} — angle ${rec.angle} degrees. mean ${rec.mean} degrees.`;
-    speakText(speakStr);
-    toast('Auto-saved: ' + rec.timestamp_local, 1400);
-    sessionSamples.length = 0; // reset for next window
-  }
-
-  function appendSavedRow(rec){
-    const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${rec.timestamp_local}</td><td>${rec.joint}</td><td>${rec.plane}</td><td>${rec.side}</td><td>${rec.angle.toFixed(1)}</td><td>${rec.mean.toFixed(1)}</td>`;
-    ui.savedBody.prepend(tr);
-  }
-
-  // Start/Stop controls
-  ui.btnEnable.addEventListener('click', enableSensors);
-
-  ui.btnStart.addEventListener('click', async () => {
-    if(!listenerAdded){
-      toast('Enable sensors first');
-      return;
-    }
-    if(running) return;
-    running = true;
-    ui.sensorStatus.textContent = 'Session: running';
-    // ensure voices loaded before first auto-speak
-    if('speechSynthesis' in window) await loadVoicesAsync();
-    autoSaveTimer = setInterval(autoSaveAction, AUTO_SAVE_MS);
-    toast('Session started');
-  });
-
-  ui.btnStop.addEventListener('click', () => {
-    if(!running) return;
-    running = false;
-    ui.sensorStatus.textContent = 'Session: stopped';
-    if(autoSaveTimer){ clearInterval(autoSaveTimer); autoSaveTimer = null; }
-    autoSaveAction(); // final save
-    toast('Session stopped and final save completed', 1600);
-  });
-
-  ui.btnCalibrate.addEventListener('click', () => {
-    zero = currentAngle || 0;
-    toast('Zero set to ' + zero.toFixed(1));
-    updateKPIs();
-  });
-  ui.btnResetMinMax.addEventListener('click', () => {
-    minVal = Infinity; maxVal = -Infinity; updateKPIs(); toast('Min/Max reset');
-  });
-
-  // CSV export
-  ui.btnExport.addEventListener('click', () => {
-    if(!savedRecords.length){ toast('No saved sessions to export'); return; }
-    const header = ['timestamp_iso','timestamp_local','joint','plane','side','angle_deg','mean_deg'];
-    const rows = savedRecords.map(r => [
-      r.timestamp_iso,
-      `"${r.timestamp_local.replace(/"/g,'""')}"`,
-      r.joint,
-      r.plane,
-      r.side,
-      r.angle,
-      r.mean
-    ].join(','));
-    const csv = [header.join(','), ...rows].join('\n');
-    const blob = new Blob([`\uFEFF${csv}`], {type: 'text/csv;charset=utf-8;'});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a'); a.href = url; a.download = `youmove_sessions_${new Date().toISOString().slice(0,19).replace(/[:T]/g,'-')}.csv`;
-    document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
-    toast('Export ready');
-  });
-
-  // voice preference change: reload voices if needed (optional)
-  ui.voicePref.addEventListener('change', () => {
-    // load voices now to pick matching
-    if('speechSynthesis' in window) loadVoicesAsync();
-    toast('TTS preference set');
-  });
-
-  // helper speak function uses pickVoice logic
-  function pickVoice(preferredLangs){
-    if(!voicesLoaded) loadVoices();
-    for(const pref of preferredLangs){
-      let v = VOICES.find(v => v.lang && v.lang.toLowerCase().startsWith(pref + '-'));
+  function pickVoice(order){
+    const VO = voices || [];
+    for(const pref of order){
+      let v = VO.find(v=>v.lang && v.lang.toLowerCase().startsWith(pref+'-'));
       if(v) return v;
-      v = VOICES.find(v => v.lang && v.lang.toLowerCase().startsWith(pref));
+      v = VO.find(v=>v.lang && v.lang.toLowerCase().startsWith(pref));
       if(v) return v;
     }
-    let fallback = VOICES.find(v => v.lang && !v.lang.toLowerCase().startsWith('ar'));
-    return fallback || VOICES[0] || null;
+    return VO.find(v=>v.lang && !v.lang.toLowerCase().startsWith('ar')) || VO[0] || null;
   }
 
   function speakText(text){
     if(!('speechSynthesis' in window) || !text) return;
-    if(!voicesLoaded) loadVoices();
-    const order = getPreferredLangOrder();
-    const voice = pickVoice(order);
+    const mode = ttsMode;
+    if(mode === 'chime'){ playChime(volRef.current); return; }
+    if(mode === 'off') return;
+    const order = (voicePref.split(',')||['en','de','es']).map(s=>s.trim());
+    const voice = selectedVoice ? voices.find(v=>v.name===selectedVoice) : pickVoice(order);
     try{
       window.speechSynthesis.cancel();
       const ut = new SpeechSynthesisUtterance(text);
-      ut.rate = 1.0; ut.pitch = 1.0;
+      ut.rate = 0.95; ut.pitch = 1.0; ut.volume = volRef.current;
       if(voice){ ut.voice = voice; ut.lang = voice.lang || order[0]; }
       else ut.lang = order[0];
       window.speechSynthesis.speak(ut);
-    }catch(e){ console.warn('TTS error', e); }
+    }catch(e){ console.warn('tts', e); }
   }
 
-  // ensure voices loaded on page load (non-blocking)
-  if('speechSynthesis' in window) loadVoicesAsync().catch(()=>{});
+  // auto-save action
+  function autoSaveAction(){
+    const buf = sessionBufferRef.current;
+    if(!buf.length) return;
+    const mean = buf.reduce((s,a)=>s+a.value,0)/buf.length;
+    const last = buf[buf.length-1];
+    const ts = new Date();
+    const rec = { timestamp_iso: ts.toISOString(), timestamp_local: ts.toLocaleString(), joint: jointRef.current, plane: planeRef.current, side: sideRef.current, angle: Number(last.value.toFixed(2)), mean: Number(mean.toFixed(2)) };
+    setSavedRecords(prev=>[rec, ...prev]);
+    // speak
+    if(ttsMode === 'chime') playChime(volRef.current);
+    else if(ttsMode === 'speak') speakText(`${rec.joint} ${rec.side}. angle ${rec.angle} degrees. mean ${rec.mean} degrees.`);
+    toast('Auto-saved ' + rec.timestamp_local);
+    sessionBufferRef.current = [];
+  }
 
-  // On page visibility change, stop speech if needed
-  document.addEventListener('visibilitychange', () => {
-    if(document.hidden && 'speechSynthesis' in window) window.speechSynthesis.cancel();
-  });
+  // controls: start/stop
+  function startSession(){ if(!listenerAdded){ toast('Enable sensors first'); return; } if(running) return; setRunning(true); setSensorStatus('running'); autoSaveTimerRef.current = setInterval(autoSaveAction, AUTO_SAVE_MS); toast('Session started'); }
+  function stopSession(){ if(!running) return; setRunning(false); setSensorStatus('stopped'); clearInterval(autoSaveTimerRef.current); autoSaveAction(); toast('Session stopped (final save)'); }
 
-  // expose for debug
-  window.YOUMOVE = { chartData, sessionSamples, savedRecords };
+  // enable handlers for UI refs
+  useEffect(()=>{ jointRef.current = jointRef.current; planeRef.current = planeRef.current; sideRef.current = sideRef.current; },[]);
 
-})();
-</script>
-</body>
-</html>
+  // expose some debug for console
+  useEffect(()=>{ window.YOUMOVE = { chartBufferRef, sessionBufferRef, savedRecords }; },[savedRecords]);
+
+  // render
+  return (
+    <div className="p-4">
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:12}}>
+        <h2>YouMOVE – Deine Gelenkbewegung: privat, offline und vollkommen cloudfrei</h2>
+        <div style={{display:'flex',gap:8}}>
+          <button className="btn primary" onClick={handleEnableSensors}>Enable Sensors</button>
+          <button className="btn" onClick={()=>{ setZero(currentAngle || 0); toast('Zero set'); }}>Set Zero</button>
+          <button className="btn" onClick={()=>{ setMinVal(Infinity); setMaxVal(-Infinity); toast('Min/Max reset'); }}>Reset Min/Max</button>
+        </div>
+      </div>
+
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
+        <div className="card">
+          <label>Joint</label>
+          <select defaultValue="Shoulder" onChange={e=>{ jointRef.current=e.target.value; }}>
+            <option>Shoulder</option><option>Elbow</option><option>Wrist</option><option>Hip</option><option>Knee</option><option>Ankle</option><option>Rest</option>
+          </select>
+        </div>
+        <div className="card">
+          <label>Plane</label>
+          <select defaultValue="beta" onChange={e=>{ planeRef.current=e.target.value; }}>
+            <option value="beta">Flexion/Extension (β)</option>
+            <option value="gamma">Abduction/Adduction (γ)</option>
+            <option value="alpha">Rotation (α)</option>
+          </select>
+        </div>
+      </div>
+
+      <div style={{display:'grid',gridTemplateColumns:'repeat(6,1fr)',gap:8,marginTop:12}}>
+        <div className="tile"><span>Angle (°)</span><h3>{Number.isFinite(currentAngle)?currentAngle.toFixed(1):'—'}</h3></div>
+        <div className="tile"><span>Max (°)</span><h3>{isFinite(maxVal)?maxVal.toFixed(1):'—'}</h3></div>
+        <div className="tile"><span>Min (°)</span><h3>{isFinite(minVal)?minVal.toFixed(1):'—'}</h3></div>
+        <div className="tile"><span>Zero Ref (°)</span><h3>{Number.isFinite(zero)?zero.toFixed(1):'—'}</h3></div>
+        <div className="tile"><span>Mean (°)</span><h3>{sessionBufferRef.current.length? (sessionBufferRef.current.reduce((s,a)=>s+a.value,0)/sessionBufferRef.current.length).toFixed(1):'—'}</h3></div>
+        <div className="tile"><span>Mode</span><h3>{jointRef.current.includes('Rest')?'Rest':'Active'}</h3></div>
+      </div>
+
+      <div style={{display:'flex',gap:8,marginTop:12}}>
+        <button className="btn primary" onClick={startSession}>Start Session</button>
+        <button className="btn warn" onClick={stopSession}>Stop Session</button>
+        <button className="btn" onClick={()=>{
+          // export savedRecords
+          if(!savedRecords.length){ toast('No saved records'); return; }
+          const header = ['timestamp_iso','timestamp_local','joint','plane','side','angle_deg','mean_deg'];
+          const rows = savedRecords.map(r=>[r.timestamp_iso, `"${r.timestamp_local.replace(/"/g,'""')}"`, r.joint, r.plane, r.side, r.angle, r.mean].join(','));
+          const csv = [header.join(','), ...rows].join('\n');
+          const blob = new Blob([`\uFEFF${csv}`], {type:'text/csv;charset=utf-8;'});
+          const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href=url; a.download = `youmove_sessions_${new Date().toISOString().slice(0,19).replace(/[:T]/g,'-')}.csv`; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+          toast('Export ready');
+        }}>Export CSV</button>
+        <div style={{marginLeft:'auto',alignSelf:'center'}} className="pill">Sensors: {sensorStatus}</div>
+      </div>
+
+      <div style={{marginTop:12}} className="card"><canvas ref={chartRef} /></div>
+
+      <div className="card" style={{marginTop:12}}>
+        <strong>Saved Sessions</strong>
+        <div style={{overflow:'auto',marginTop:8}}>
+          <table style={{width:'100%'}}>
+            <thead><tr><th>Timestamp</th><th>Joint</th><th>Plane</th><th>Side</th><th>Angle</th><th>Mean</th></tr></thead>
+            <tbody>
+              {savedRecords.map((r, i)=>(<tr key={i}><td>{r.timestamp_local}</td><td>{r.joint}</td><td>{r.plane}</td><td>{r.side}</td><td>{r.angle.toFixed(1)}</td><td>{r.mean.toFixed(1)}</td></tr>))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div style={{marginTop:12}} className="card small-muted">
+        <pre style={{whiteSpace:'pre-wrap',margin:0,fontFamily:'inherit',fontSize:13}}>
+Disclaimer: This tool is intended for screening, exercise guidance, and documentation support. It does not replace clinical judgment or certified goniometry where required.
+
+Intellectual Property: The software, design, code, and all algorithms are the intellectual property of Moustafa Mohammed Elsayed Ali and are protected by copyright and patent law. Any reproduction, distribution, or commercial use without explicit written permission is prohibited.
+
+Contact: Moustafa Mohammed Elsayed Ali
+Adresse: Kronwittener Straße 1, 84367 Tann, Germany
+Telefon: +49 1522 5321568
+E-Mail: mostischmidbauer@web.de | dptmostafa@gmail.com
+LinkedIn: https://www.linkedin.com/in/moustafa-ali-024471aa/
+        </pre>
+      </div>
+
+      <div ref={toastRef} style={{position:'fixed',left:'50%',transform:'translateX(-50%)',bottom:16,background:'#072027',padding:'8px 12px',borderRadius:10,color:'#dff6ea',opacity:0,transition:'opacity .2s'}} />
+    </div>
+  );
+}
