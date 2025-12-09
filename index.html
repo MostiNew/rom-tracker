@@ -164,6 +164,7 @@ th{color:var(--muted);}
   let sessionSamples=[], chartData=[]; 
   let autoSaveInterval=null;
   const liveWindowSec=30;
+  let ttsUtterance=null;
 
   const ctx = document.getElementById('liveChart').getContext('2d');
   const liveChart = new Chart(ctx,{
@@ -193,7 +194,9 @@ th{color:var(--muted);}
       if(!running) return;
       const a=e.alpha||0,b=e.beta||0,g=e.gamma||0;
       const val = getAngle(a,b,g,ui.plane.value)-zero;
-      currentAngle = ((val+180)%360)-180;
+      const angleVal = ((val+180)%360)-180;
+      if(isNaN(angleVal)) return; // skip invalid
+      currentAngle = angleVal;
       if(currentAngle>max) max=currentAngle;
       if(currentAngle<min) min=currentAngle;
       const now = new Date();
@@ -240,11 +243,13 @@ th{color:var(--muted);}
     ui.savedSessions.appendChild(row);
 
     // TTS
-    const lang = ui.ttsLang.value || 'en-US';
     if(window.speechSynthesis){
-      const msg = new SpeechSynthesisUtterance(`Angle: ${last.value.toFixed(1)} degrees`);
-      msg.lang = lang; msg.volume = 0.5; msg.rate = 0.9;
-      window.speechSynthesis.speak(msg);
+      if(ttsUtterance) window.speechSynthesis.cancel();
+      ttsUtterance = new SpeechSynthesisUtterance(`Angle: ${last.value.toFixed(1)} degrees`);
+      ttsUtterance.lang = ui.ttsLang.value || 'en-US';
+      ttsUtterance.volume = 0.5;
+      ttsUtterance.rate = 0.9;
+      window.speechSynthesis.speak(ttsUtterance);
     }
 
     sessionSamples=[]; // clear buffer
