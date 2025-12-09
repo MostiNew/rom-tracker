@@ -1,133 +1,164 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="de">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>ROM Tracker – YouMOVE</title>
+
+<!-- Styles (mobile-first, touch-friendly) -->
 <style>
-:root { --bg:#0b1016; --card:#121820; --muted:#8aa0b2; --text:#eaf2f8; --accent:#50c878; --warn:#ffc857; }
-*{box-sizing:border-box;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
-body{margin:0;background:linear-gradient(180deg,#0b1016,#0e141c);color:var(--text)}
-.wrap{max-width:960px;margin:0 auto;padding:16px 14px 40px}
-header{display:flex;align-items:center;gap:12px;justify-content:space-between;margin:6px 0 14px}
-h1{font-size:22px;margin:0}
-.card{background:var(--card);border:1px solid #1d2732;border-radius:18px;padding:14px;margin:10px 0;box-shadow:0 6px 24px rgba(0,0,0,.28)}
-label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px}
-select, button{width:100%;padding:12px;border-radius:12px;border:1px solid #203040;background:#0b1118;color:var(--text);font-size:15px}
-.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.btn{cursor:pointer;transition:transform .02s ease,opacity .2s}
-.btn:active{transform:scale(.98)}
-.btn.primary{background:var(--accent);color:#072d19;border-color:#0d5b3a;font-weight:700}
-.btn.warn{background:var(--warn);color:#432; border-color:#a77}
-.kpi{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px}
-.tile{background:#0a121a;border:1px solid #1d2a38;border-radius:16px;padding:14px;text-align:center}
-.tile h3{margin:4px 0 0;font-size:24px}
-.tile span{font-size:12px;color:var(--muted)}
-.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:24px;background:#0f1b23;padding:10px 14px;border-radius:10px;border:1px solid #1f2f3a;box-shadow:0 6px 20px rgba(0,0,0,.4);display:none;z-index:999}
+  :root{
+    --bg:#0b1016; --card:#121820; --muted:#8aa0b2; --text:#eaf2f8;
+    --accent:#50c878; --warn:#ffc857; --card-ink:#a9bfd2;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;
+    background:linear-gradient(180deg,#0b1016,#0e141c); color:var(--text);
+    -webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;
+  }
+  .wrap{max-width:980px;margin:0 auto;padding:14px;display:flex;flex-direction:column;gap:12px}
+  header{display:flex;flex-direction:column;gap:10px}
+  header .top{display:flex;justify-content:space-between;align-items:center;gap:12px}
+  h1{font-size:18px;margin:0}
+  .controls{display:flex;gap:8px;flex-wrap:wrap}
+  button{padding:12px;border-radius:12px;border:1px solid #203040;background:#0b1118;color:var(--text);font-size:15px;cursor:pointer}
+  .btn{display:inline-flex;align-items:center;justify-content:center}
+  .btn.primary{background:var(--accent);color:#072d19;border-color:#0d5b3a;font-weight:700}
+  .btn.warn{background:var(--warn);color:#432;border-color:#a77}
+  .card{background:var(--card);border:1px solid #1d2732;border-radius:14px;padding:12px;box-shadow:0 8px 32px rgba(0,0,0,.35)}
+  label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px}
+  select,input{width:100%;padding:10px;border-radius:10px;border:1px solid #203040;background:#0b1118;color:var(--text);font-size:15px}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .kpi{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .tile{background:#08101a;border:1px solid #16222c;border-radius:12px;padding:10px;text-align:center}
+  .tile span{font-size:12px;color:var(--muted);display:block}
+  .tile h3{margin:6px 0 0;font-size:18px}
+  canvas{width:100%!important;height:180px!important;display:block;border-radius:8px}
+  table{width:100%;border-collapse:collapse;color:var(--card-ink);font-size:13px}
+  th,td{padding:8px;border-bottom:1px solid #16222c;text-align:left}
+  th{font-weight:600;color:var(--accent);background:#081116}
+  .hint{font-size:12px;color:var(--muted);margin-top:6px}
+  .pill{display:inline-block;padding:6px 10px;border-radius:999px;background:#081216;border:1px solid #16222c;font-size:13px}
+  /* responsive */
+  @media(min-width:720px){
+    header{flex-direction:row;align-items:center}
+    .kpi{grid-template-columns:repeat(6,1fr)}
+    .row{grid-template-columns:repeat(2,1fr)}
+  }
 </style>
+
+<!-- Chart + adapter -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/moment@2.29.4/moment.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-moment@1.0.0"></script>
 </head>
 <body>
 <div class="wrap">
+
   <header>
-    <h1>YouMOVE – Deine Gelenkbewegung: privat, souverän und cloudfrei</h1>
-    <div class="flex">
-      <button id="btnEnable" class="btn primary">Enable Sensors</button>
-      <button id="btnCalibrate" class="btn">Set Zero</button>
-      <button id="btnResetMinMax" class="btn">Reset Min/Max</button>
+    <div class="top">
+      <h1>YouMOVE — Live ROM Tracker (offline)</h1>
+      <div class="controls">
+        <button id="btnEnable" class="btn primary">Enable Sensors</button>
+        <button id="btnCalibrate" class="btn">Set Zero</button>
+        <button id="btnResetMinMax" class="btn">Reset Min/Max</button>
+      </div>
     </div>
+    <div class="hint">Open on a mobile device with motion sensors. On iOS, tap <strong>Enable Sensors</strong> and allow Motion & Orientation access.</div>
   </header>
 
+  <!-- selections -->
   <div class="card">
     <div class="row">
       <div>
-        <label>Joint</label>
-        <select id="joint">
-          <option>Shoulder</option>
-          <option>Elbow</option>
-          <option>Wrist</option>
-          <option>Hip</option>
-          <option>Knee</option>
-          <option>Ankle</option>
-          <option>Rest</option>
+        <label for="joint">Joint</label>
+        <select id="joint" aria-label="Joint">
+          <option>Shoulder</option><option>Elbow</option><option>Wrist</option>
+          <option>Hip</option><option>Knee</option><option>Ankle</option><option>Rest</option>
         </select>
       </div>
       <div>
-        <label>Plane / Movement</label>
-        <select id="plane">
+        <label for="plane">Plane / Movement</label>
+        <select id="plane" aria-label="Plane">
           <option value="beta">Flexion/Extension (β)</option>
           <option value="gamma">Abduction/Adduction (γ)</option>
           <option value="alpha">Rotation (α)</option>
         </select>
       </div>
     </div>
-    <div class="row" style="margin-top:10px;">
-      <div>
-        <label>Side</label>
-        <select id="side">
-          <option>Right</option>
-          <option>Left</option>
-          <option>Midline</option>
-        </select>
-      </div>
+    <div style="margin-top:8px">
+      <label for="side">Side</label>
+      <select id="side" aria-label="Side">
+        <option>Right</option><option>Left</option><option>Midline</option>
+      </select>
     </div>
   </div>
 
+  <!-- KPIs + controls -->
   <div class="card">
-    <div class="kpi">
+    <div class="kpi" aria-hidden="false">
       <div class="tile"><span>Angle (°)</span><h3 id="angle">—</h3></div>
       <div class="tile"><span>Max (°)</span><h3 id="max">—</h3></div>
       <div class="tile"><span>Min (°)</span><h3 id="min">—</h3></div>
       <div class="tile"><span>Zero Ref (°)</span><h3 id="zero">—</h3></div>
       <div class="tile"><span>Mean (°)</span><h3 id="mean">—</h3></div>
-      <div class="tile"><span>Joint / Rest</span><h3 id="jointRest">—</h3></div>
+      <div class="tile"><span>Mode</span><h3 id="jointRest">—</h3></div>
     </div>
-    <div style="margin-top:10px;">
-      <button id="btnStart" class="btn primary">Start</button>
-      <button id="btnStop" class="btn warn">Stop</button>
+
+    <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+      <button id="btnStart" class="btn primary">Start Session</button>
+      <button id="btnStop" class="btn warn">Stop Session</button>
       <button id="btnExport" class="btn">Export CSV</button>
-      <span id="sensorStatus" class="tile" style="padding:6px;">Sensors: idle</span>
+      <div class="pill" id="sensorStatus">Sensors: idle</div>
+    </div>
+    <div class="hint">Sessions auto-save every 20 seconds and are spoken aloud.</div>
+  </div>
+
+  <!-- chart -->
+  <div class="card">
+    <strong>Live Session Chart (last 30s)</strong>
+    <canvas id="liveChart" aria-label="Live angle chart"></canvas>
+  </div>
+
+  <!-- saved -->
+  <div class="card">
+    <strong>Saved Sessions</strong>
+    <div style="overflow:auto;margin-top:8px;">
+      <table id="savedSessionsTable" aria-label="Saved sessions table">
+        <thead>
+          <tr><th>Timestamp</th><th>Joint</th><th>Plane</th><th>Side</th><th>Angle</th><th>Mean</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
     </div>
   </div>
 
+  <!-- legal -->
   <div class="card">
-    <canvas id="liveChart" height="120"></canvas>
-  </div>
-
-  <div class="card">
-    <table style="width:100%;color:#eaf2f8;border-collapse:collapse;" id="savedSessions">
-      <thead>
-        <tr>
-          <th>Timestamp</th><th>Joint</th><th>Plane</th><th>Side</th><th>Angle</th><th>Mean</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-  </div>
-
-  <div class="card">
-    <p style="color:var(--muted);font-size:12px;">
-      <strong>Disclaimer:</strong> This tool is intended for screening, exercise guidance, and documentation support. It does not replace clinical judgment or certified goniometry.<br><br>
-      <strong>Intellectual Property:</strong> Software and code are property of Moustafa Mohammed Elsayed Ali.<br>
-      <strong>Contact:</strong> <a href="mailto:mostischmidbauer@web.de">mostischmidbauer@web.de</a> | <a href="mailto:dptmostafa@gmail.com">dptmostafa@gmail.com</a>
+    <p style="color:var(--muted);font-size:13px;margin:0;">
+      <strong>Disclaimer:</strong> This tool is intended for screening, exercise guidance, and documentation support. It does not replace clinical judgment or certified goniometry.<br>
+      <strong>Contact:</strong> <a href="mailto:mostischmidbauer@web.de">mostischmidbauer@web.de</a>
     </p>
   </div>
+
 </div>
 
-<div class="toast" id="toast"></div>
+<!-- minimal toast -->
+<div id="toast" style="position:fixed;left:50%;transform:translateX(-50%);bottom:16px;background:#072027;padding:8px 12px;border-radius:10px;color:#dff6ea;display:none;z-index:999"></div>
 
+<!-- libs already loaded above -->
 <script>
-(function(){
+(() => {
+  // UI refs
   const ui = {
     angle: document.getElementById('angle'),
-    min: document.getElementById('min'),
     max: document.getElementById('max'),
+    min: document.getElementById('min'),
     zero: document.getElementById('zero'),
     mean: document.getElementById('mean'),
     jointRest: document.getElementById('jointRest'),
-    sensorStatus: document.getElementById('sensorStatus'),
     btnEnable: document.getElementById('btnEnable'),
     btnCalibrate: document.getElementById('btnCalibrate'),
     btnResetMinMax: document.getElementById('btnResetMinMax'),
@@ -137,137 +168,272 @@ select, button{width:100%;padding:12px;border-radius:12px;border:1px solid #2030
     joint: document.getElementById('joint'),
     plane: document.getElementById('plane'),
     side: document.getElementById('side'),
-    savedSessions: document.querySelector('#savedSessions tbody'),
-    toast: document.getElementById('toast')
+    sensorStatus: document.getElementById('sensorStatus'),
+    savedBody: document.querySelector('#savedSessionsTable tbody'),
+    toast: document.getElementById('toast'),
+    chartCanvas: document.getElementById('liveChart')
   };
 
-  let running=false, zero=0, min=Infinity, max=-Infinity, currentAngle=0, listenerAdded=false;
-  let sessionSamples=[], chartData=[]; 
-  let autoSaveInterval=null;
-  const liveWindowSec=30;
+  // state
+  let running = false;
+  let listenerAdded = false;
+  let zero = 0;
+  let minVal = Infinity, maxVal = -Infinity;
+  let currentAngle = 0;
+  const sessionSamples = [];   // samples used to compute mean for current auto-save window
+  const chartData = [];        // master buffer for chart (kept rolling)
+  const savedRecords = [];     // saved rows for export
+  const LIVE_WINDOW_SEC = 30;
+  const AUTO_SAVE_MS = 20000; // 20 seconds
+  let autoSaveTimer = null;
 
-  // Chart.js setup
-  const ctx = document.getElementById('liveChart').getContext('2d');
-  const liveChart = new Chart(ctx,{
-    type:'line',
-    data:{
-      labels:[],
-      datasets:[
-        {label:'Angle (°)', data:[], borderColor:'#50c878', backgroundColor:'rgba(80,200,120,0.1)', tension:0.2},
-        {label:'Mean', data:[], borderColor:'#ffc857', borderDash:[5,5], fill:false, pointRadius:0, tension:0}
-      ]
-    },
-    options:{
-      animation:false,
-      responsive:true,
-      scales:{
-        x:{ type:'time', time:{ tooltipFormat:'HH:mm:ss', unit:'second' }, ticks:{ source:'auto' } },
-        y:{ beginAtZero:true }
-      }
+  // tiny toast
+  function toast(msg, ms=1500){
+    ui.toast.textContent = msg; ui.toast.style.display='block';
+    clearTimeout(ui._t); ui._t = setTimeout(()=> ui.toast.style.display='none', ms);
+  }
+
+  // Speech: speak text if allowed
+  function speakText(text){
+    if(!('speechSynthesis' in window)) return;
+    try{
+      const ut = new SpeechSynthesisUtterance(text);
+      // choose a shorter voice if available
+      const voices = window.speechSynthesis.getVoices();
+      if(voices && voices.length) ut.voice = voices[0];
+      window.speechSynthesis.cancel(); // cancel any previous to avoid overlap
+      window.speechSynthesis.speak(ut);
+    }catch(e){
+      // ignore speech errors
+      console.warn('TTS error', e);
+    }
+  }
+
+  // Chart.js initialization (dataset.data uses {x:Date, y:number})
+  const chart = new Chart(ui.chartCanvas.getContext('2d'), {
+    type: 'line',
+    data: { datasets: [
+      { label: 'Angle (°)', data: [], borderColor:'#50c878', backgroundColor:'rgba(80,200,120,0.08)', pointRadius:0, tension:0.15 },
+      { label: 'Mean', data: [], borderColor:'#ffc857', borderDash:[6,4], pointRadius:0, fill:false, tension:0 }
+    ]},
+    options: {
+      animation: false,
+      responsive: true,
+      interaction: { mode: 'index', intersect: false },
+      stacked: false,
+      scales: {
+        x: {
+          type: 'time',
+          time: { tooltipFormat: 'YYYY-MM-DD HH:mm:ss', unit: 'second', displayFormats: { second: 'HH:mm:ss' } },
+          ticks: { autoSkip: true, maxTicksLimit: 6 }
+        },
+        y: { beginAtZero: false }
+      },
+      plugins: { legend: { display: true } }
     }
   });
 
-  function showToast(txt, ms=1500){
-    ui.toast.textContent=txt; ui.toast.style.display='block';
-    setTimeout(()=>{ui.toast.style.display='none';}, ms);
+  // helper: keep chartData as rolling buffer (e.g., last 10 minutes) to avoid memory growth
+  function pushToChart(time, value){
+    chartData.push({x: time, y: value});
+    // keep max 10 minutes history to be safe (10*60 sec)
+    const cutoff = new Date(Date.now() - 10*60*1000);
+    while(chartData.length && chartData[0].x < cutoff) chartData.shift();
   }
 
+  function updateKPIs(){
+    ui.angle.textContent = Number.isFinite(currentAngle) ? currentAngle.toFixed(1) : '—';
+    ui.min.textContent = isFinite(minVal) ? minVal.toFixed(1) : '—';
+    ui.max.textContent = isFinite(maxVal) ? maxVal.toFixed(1) : '—';
+    ui.zero.textContent = Number.isFinite(zero) ? zero.toFixed(1) : '—';
+    const mean = sessionSamples.length ? sessionSamples.reduce((s,a)=>s+a.value,0)/sessionSamples.length : NaN;
+    ui.mean.textContent = sessionSamples.length ? mean.toFixed(1) : '—';
+    ui.jointRest.textContent = ui.joint.value.includes('Rest') ? 'Rest' : 'Active';
+  }
+
+  // update chart with rolling window
+  function refreshChart(){
+    const now = new Date();
+    const windowStart = new Date(now.getTime() - LIVE_WINDOW_SEC*1000);
+    const visible = chartData.filter(pt => pt.x >= windowStart);
+    // dataset 0: raw visible, dataset 1: mean line
+    const values = visible.map(pt => pt.y);
+    const meanVal = values.length ? values.reduce((a,b)=>a+b,0)/values.length : NaN;
+    chart.data.datasets[0].data = visible;
+    chart.data.datasets[1].data = visible.map(pt => ({x: pt.x, y: meanVal}));
+    chart.update('none');
+  }
+
+  // sensor handler
+  function onDeviceOrientation(e){
+    if(!running) return;
+    // alpha/beta/gamma may be undefined on some browsers — guard
+    const a = (typeof e.alpha === 'number') ? e.alpha : 0;
+    const b = (typeof e.beta === 'number') ? e.beta : 0;
+    const g = (typeof e.gamma === 'number') ? e.gamma : 0;
+    // pick axis per selected plane
+    let raw = 0;
+    switch(ui.plane.value){
+      case 'alpha': raw = ((a + 540) % 360) - 180; break; // yaw normalized
+      case 'beta': raw = b; break; // pitch
+      case 'gamma': raw = g; break; // roll
+      default: raw = b;
+    }
+    const adjusted = raw - zero;
+    // normalize to -180..180
+    const wrapped = ((adjusted + 180) % 360) - 180;
+    currentAngle = wrapped;
+    // update min/max
+    if(wrapped > maxVal) maxVal = wrapped;
+    if(wrapped < minVal) minVal = wrapped;
+    // push into session and chart buffers
+    const now = new Date();
+    sessionSamples.push({time: now, value: wrapped});
+    pushToChart(now, wrapped);
+    // update UI and chart
+    updateKPIs();
+    refreshChart();
+  }
+
+  // sensor start: handles iOS permission flow
   function enableSensors(){
-    if(!window.DeviceOrientationEvent){
-      ui.sensorStatus.textContent='Sensors not supported';
-      showToast('Device orientation not supported');
+    if(!('DeviceOrientationEvent' in window)){
+      ui.sensorStatus.textContent = 'Sensors: not supported';
+      toast('DeviceOrientation not supported');
       return;
     }
-    if(typeof DeviceOrientationEvent.requestPermission==='function'){
-      DeviceOrientationEvent.requestPermission().then(p=>{
-        if(p==='granted') startSensorListener();
-        else { ui.sensorStatus.textContent='Sensors blocked'; showToast('Permission denied'); }
-      }).catch(()=>{ ui.sensorStatus.textContent='Sensors blocked'; showToast('Permission denied'); });
-    }else startSensorListener();
+    // some iOS require requestPermission()
+    if(typeof DeviceOrientationEvent.requestPermission === 'function'){
+      DeviceOrientationEvent.requestPermission().then(permissionState => {
+        if(permissionState === 'granted'){
+          attachListener();
+        } else {
+          ui.sensorStatus.textContent = 'Sensors: blocked';
+          toast('Permission denied for motion sensors');
+        }
+      }).catch(err => {
+        console.warn('Permission error', err);
+        ui.sensorStatus.textContent = 'Sensors: blocked';
+        toast('Permission request failed');
+      });
+    } else {
+      // non-iOS (Chrome/Android) usually do not require request
+      attachListener();
+    }
   }
 
-  function startSensorListener(){
+  function attachListener(){
     if(listenerAdded) return;
-    window.addEventListener('deviceorientation', e=>{
-      if(!running) return;
-      const a=e.alpha||0, b=e.beta||0, g=e.gamma||0;
-      const val = getAngle(a,b,g,ui.plane.value)-zero;
-      currentAngle = ((val+180)%360)-180;
-      if(currentAngle>max) max=currentAngle;
-      if(currentAngle<min) min=currentAngle;
-      const now=new Date();
-      sessionSamples.push({time:now,value:currentAngle});
-      chartData.push({time:now,value:currentAngle});
-      updateKPI();
-      updateChart();
-    }, true);
-    listenerAdded=true;
-    ui.sensorStatus.textContent='Sensors ready';
-    showToast('Sensors enabled');
+    window.addEventListener('deviceorientation', onDeviceOrientation, {passive:true});
+    listenerAdded = true;
+    ui.sensorStatus.textContent = 'Sensors: ready';
+    toast('Sensors enabled — press Start Session');
   }
 
-  function getAngle(a,b,g,plane){ 
-    switch(plane){ case'alpha':return ((a+540)%360)-180; case'beta':return b; case'gamma':return g; default:return 0; } 
-  }
-
-  function updateKPI(){
-    ui.angle.textContent=currentAngle.toFixed(1);
-    ui.min.textContent=isFinite(min)?min.toFixed(1):'—';
-    ui.max.textContent=isFinite(max)?max.toFixed(1):'—';
-    ui.zero.textContent=zero.toFixed(1);
-    const mean=sessionSamples.length?sessionSamples.reduce((a,b)=>a.value+b.value,0)/sessionSamples.length:0;
-    ui.mean.textContent=sessionSamples.length?mean.toFixed(1):'—';
-    ui.jointRest.textContent=ui.joint.value.includes('Rest')?'Rest':'Active';
-  }
-
-  function updateChart(){
-    const now=new Date();
-    const windowStart=new Date(now.getTime()-liveWindowSec*1000);
-    const visible=chartData.filter(s=>s.time>=windowStart);
-    liveChart.data.labels=visible.map(s=>s.time);
-    const values=visible.map(s=>s.value);
-    const meanVal=values.length?values.reduce((a,b)=>a+b,0)/values.length:0;
-    liveChart.data.datasets[0].data=values;
-    liveChart.data.datasets[1].data=Array(values.length).fill(meanVal);
-    liveChart.update();
-  }
-
-  function autoSave(){
+  // auto-save routine (also speaks)
+  function autoSaveAction(){
     if(!sessionSamples.length) return;
-    const mean=sessionSamples.reduce((a,b)=>a.value+b.value,0)/sessionSamples.length;
-    const last=sessionSamples[sessionSamples.length-1];
-    const row=document.createElement('tr');
-    row.innerHTML=`<td>${last.time.toLocaleTimeString()}</td><td>${ui.joint.value}</td><td>${ui.plane.value}</td><td>${ui.side.value}</td><td>${last.value.toFixed(1)}</td><td>${mean.toFixed(1)}</td>`;
-    ui.savedSessions.appendChild(row);
-    sessionSamples=[]; // clear buffer but chartData remains for live chart
+    // compute mean and last reading
+    const mean = sessionSamples.reduce((s,a)=>s+a.value,0) / sessionSamples.length;
+    const last = sessionSamples[sessionSamples.length - 1];
+    // detailed timestamp with date
+    const ts = new Date();
+    const timestamp = ts.toLocaleString(); // includes date and time
+    // create record and append to savedRecords + table
+    const rec = {
+      timestamp_iso: ts.toISOString(),
+      timestamp_local: timestamp,
+      joint: ui.joint.value,
+      plane: ui.plane.value,
+      side: ui.side.value,
+      angle: Number(last.value.toFixed(2)),
+      mean: Number(mean.toFixed(2))
+    };
+    savedRecords.push(rec);
+    appendSavedRow(rec);
+    // speak reading
+    const speakStr = `${ui.joint.value} ${ui.side.value} — angle ${rec.angle} degrees. mean ${rec.mean} degrees.`;
+    speakText(speakStr);
+    toast('Auto-saved: ' + timestamp, 1500);
+    // keep chartData (do not clear) so chart stays continuous
+    // clear sessionSamples so next auto-window fresh (optional). We'll clear to keep mean per-interval meaningful
+    sessionSamples.length = 0;
   }
 
-  ui.btnEnable.addEventListener('click', enableSensors);
-  ui.btnStart.addEventListener('click', ()=>{
-    if(!listenerAdded){ showToast('Enable sensors first'); return; }
-    running=true; 
-    ui.sensorStatus.textContent='Session running';
-    autoSaveInterval=setInterval(autoSave,20000);
-  });
-  ui.btnStop.addEventListener('click', ()=>{
-    running=false;
-    ui.sensorStatus.textContent='Session stopped';
-    clearInterval(autoSaveInterval);
-  });
-  ui.btnCalibrate.addEventListener('click', ()=>{ zero=currentAngle; updateKPI(); showToast('Zero set'); });
-  ui.btnResetMinMax.addEventListener('click', ()=>{ min=Infinity; max=-Infinity; updateKPI(); showToast('Min/Max reset'); });
+  function appendSavedRow(rec){
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${rec.timestamp_local}</td><td>${rec.joint}</td><td>${rec.plane}</td><td>${rec.side}</td><td>${rec.angle.toFixed(1)}</td><td>${rec.mean.toFixed(1)}</td>`;
+    ui.savedBody.prepend(tr);
+  }
 
-  ui.btnExport.addEventListener('click', ()=>{
-    let csv='Timestamp,Joint,Plane,Side,Angle,Mean\n';
-    ui.savedSessions.querySelectorAll('tr').forEach(r=>{
-      const cells=Array.from(r.children).map(c=>c.textContent);
-      csv+=cells.join(',')+'\n';
-    });
-    const blob=new Blob([csv],{type:'text/csv'});
-    const url=URL.createObjectURL(blob);
-    const a=document.createElement('a'); a.href=url; a.download='sessions.csv'; a.click();
-    URL.revokeObjectURL(url);
+  // Start/Stop controls
+  ui.btnEnable.addEventListener('click', enableSensors);
+  ui.btnStart.addEventListener('click', () => {
+    if(!listenerAdded){
+      toast('Enable sensors first');
+      return;
+    }
+    if(running) return;
+    running = true;
+    ui.sensorStatus.textContent = 'Session: running';
+    // start auto-save timer
+    autoSaveTimer = setInterval(autoSaveAction, AUTO_SAVE_MS);
+    toast('Session started');
   });
+  ui.btnStop.addEventListener('click', () => {
+    if(!running) return;
+    running = false;
+    ui.sensorStatus.textContent = 'Session: stopped';
+    if(autoSaveTimer){ clearInterval(autoSaveTimer); autoSaveTimer = null; }
+    // also do one final save of remaining samples
+    autoSaveAction();
+    toast('Session stopped and final auto-save completed', 1500);
+  });
+
+  ui.btnCalibrate.addEventListener('click', () => {
+    zero = currentAngle || 0;
+    toast('Zero set to ' + zero.toFixed(1));
+    updateKPIs();
+  });
+  ui.btnResetMinMax.addEventListener('click', () => {
+    minVal = Infinity; maxVal = -Infinity; updateKPIs(); toast('Min/Max reset');
+  });
+
+  // CSV export
+  ui.btnExport.addEventListener('click', () => {
+    if(!savedRecords.length){
+      toast('No saved sessions to export');
+      return;
+    }
+    // CSV header + rows with ISO timestamp and local timestamp
+    const header = ['timestamp_iso','timestamp_local','joint','plane','side','angle_deg','mean_deg'];
+    const rows = savedRecords.map(r => [
+      r.timestamp_iso,
+      `"${r.timestamp_local.replace(/"/g,'""')}"`,
+      r.joint,
+      r.plane,
+      r.side,
+      r.angle,
+      r.mean
+    ].join(','));
+    const csv = [header.join(','), ...rows].join('\n');
+    const blob = new Blob([`\uFEFF${csv}`], {type: 'text/csv;charset=utf-8;'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = `youmove_sessions_${new Date().toISOString().slice(0,19).replace(/[:T]/g,'-')}.csv`;
+    document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+    toast('Export ready');
+  });
+
+  // On page visibility change, stop speech if needed
+  document.addEventListener('visibilitychange', () => {
+    if(document.hidden && 'speechSynthesis' in window) window.speechSynthesis.cancel();
+  });
+
+  // Small demo: ensure voices loaded for TTS on some browsers
+  window.speechSynthesis && window.speechSynthesis.getVoices();
+
+  // expose for debug (optional)
+  window.YOUMOVE = { chartData, sessionSamples, savedRecords };
 
 })();
 </script>
