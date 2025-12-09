@@ -47,6 +47,7 @@
     .kpi{grid-template-columns:repeat(6,1fr)}
     .row{grid-template-columns:repeat(2,1fr)}
   }
+  .select-voice { width:180px; padding:8px; border-radius:8px; background:#071014; color:var(--text); border:1px solid #203040; }
 </style>
 
 <!-- Chart + adapter -->
@@ -60,10 +61,19 @@
   <header>
     <div class="top">
       <h1>YouMOVE — Live ROM Tracker (offline)</h1>
-      <div class="controls">
-        <button id="btnEnable" class="btn primary">Enable Sensors</button>
-        <button id="btnCalibrate" class="btn">Set Zero</button>
-        <button id="btnResetMinMax" class="btn">Reset Min/Max</button>
+      <div style="display:flex;gap:8px;align-items:center">
+        <div class="controls">
+          <button id="btnEnable" class="btn primary">Enable Sensors</button>
+          <button id="btnCalibrate" class="btn">Set Zero</button>
+          <button id="btnResetMinMax" class="btn">Reset Min/Max</button>
+        </div>
+        <!-- Voice preference selector -->
+        <label style="margin:0 0 0 8px;color:var(--muted);font-size:13px">TTS preference</label>
+        <select id="voicePref" class="select-voice" aria-label="Speech language preference">
+          <option value="en,de,es">English → German → Spanish</option>
+          <option value="de,en,es">German → English → Spanish</option>
+          <option value="es,en,de">Spanish → English → German</option>
+        </select>
       </div>
     </div>
     <div class="hint">Open on a mobile device with motion sensors. On iOS, tap <strong>Enable Sensors</strong> and allow Motion & Orientation access.</div>
@@ -113,7 +123,7 @@
       <button id="btnExport" class="btn">Export CSV</button>
       <div class="pill" id="sensorStatus">Sensors: idle</div>
     </div>
-    <div class="hint">Sessions auto-save every 20 seconds and are spoken aloud.</div>
+    <div class="hint">Sessions auto-save every 20 seconds and are spoken aloud in your preferred language (English/German/Spanish).</div>
   </div>
 
   <!-- chart -->
@@ -171,7 +181,8 @@
     sensorStatus: document.getElementById('sensorStatus'),
     savedBody: document.querySelector('#savedSessionsTable tbody'),
     toast: document.getElementById('toast'),
-    chartCanvas: document.getElementById('liveChart')
+    chartCanvas: document.getElementById('liveChart'),
+    voicePref: document.getElementById('voicePref')
   };
 
   // state
@@ -187,26 +198,77 @@
   const AUTO_SAVE_MS = 20000; // 20 seconds
   let autoSaveTimer = null;
 
+  // speech voices
+  let VOICES = [];
+  let voicesLoaded = false;
+
+  // preferred language order default: English, German, Spanish
+  function getPreferredLangOrder(){
+    // ui.voicePref value is a CSV like 'en,de,es'
+    return (ui.voicePref.value || 'en,de,es').split(',').map(s => s.trim().toLowerCase());
+  }
+
+  // load voices (handles async voiceschanged)
+  function loadVoices(){
+    VOICES = window.speechSynthesis.getVoices() || [];
+    if(VOICES.length) {
+      voicesLoaded = true;
+    }
+  }
+  // attempt to load voices and listen for change
+  loadVoices();
+  if('speechSynthesis' in window){
+    window.speechSynthesis.onvoiceschanged = () => {
+      loadVoices();
+    };
+  }
+
+  // pick a voice matching preferred languages (array of lang prefixes)
+  function pickVoice(preferredLangs){
+    if(!voicesLoaded) loadVoices();
+    // try exact/lang-start matches in order
+    for(const pref of preferredLangs){
+      // prefer exact regional match first (e.g., en-US)
+      let v = VOICES.find(v => v.lang && v.lang.toLowerCase().startsWith(pref + '-'));
+      if(v) return v;
+      // otherwise any that starts with prefix
+      v = VOICES.find(v => v.lang && v.lang.toLowerCase().startsWith(pref));
+      if(v) return v;
+    }
+    // fallback: first voice that is not Arabic ideally
+    let fallback = VOICES.find(v => v.lang && !v.lang.toLowerCase().startsWith('ar'));
+    return fallback || VOICES[0] || null;
+  }
+
+  // speak text using preferred languages (or user selected order)
+  function speakText(text){
+    if(!('speechSynthesis' in window) || !text) return;
+    // ensure voices list available
+    if(!voicesLoaded) loadVoices();
+    const langOrder = getPreferredLangOrder();
+    const voice = pickVoice(langOrder);
+
+    try{
+      window.speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      u.rate = 1.0;
+      u.pitch = 1.0;
+      if(voice){
+        u.voice = voice;
+        u.lang = voice.lang || (langOrder[0] || 'en');
+      } else {
+        u.lang = langOrder[0] || 'en';
+      }
+      window.speechSynthesis.speak(u);
+    }catch(e){
+      console.warn('TTS error', e);
+    }
+  }
+
   // tiny toast
   function toast(msg, ms=1500){
     ui.toast.textContent = msg; ui.toast.style.display='block';
     clearTimeout(ui._t); ui._t = setTimeout(()=> ui.toast.style.display='none', ms);
-  }
-
-  // Speech: speak text if allowed
-  function speakText(text){
-    if(!('speechSynthesis' in window)) return;
-    try{
-      const ut = new SpeechSynthesisUtterance(text);
-      // choose a shorter voice if available
-      const voices = window.speechSynthesis.getVoices();
-      if(voices && voices.length) ut.voice = voices[0];
-      window.speechSynthesis.cancel(); // cancel any previous to avoid overlap
-      window.speechSynthesis.speak(ut);
-    }catch(e){
-      // ignore speech errors
-      console.warn('TTS error', e);
-    }
   }
 
   // Chart.js initialization (dataset.data uses {x:Date, y:number})
@@ -236,7 +298,6 @@
   // helper: keep chartData as rolling buffer (e.g., last 10 minutes) to avoid memory growth
   function pushToChart(time, value){
     chartData.push({x: time, y: value});
-    // keep max 10 minutes history to be safe (10*60 sec)
     const cutoff = new Date(Date.now() - 10*60*1000);
     while(chartData.length && chartData[0].x < cutoff) chartData.shift();
   }
@@ -256,7 +317,6 @@
     const now = new Date();
     const windowStart = new Date(now.getTime() - LIVE_WINDOW_SEC*1000);
     const visible = chartData.filter(pt => pt.x >= windowStart);
-    // dataset 0: raw visible, dataset 1: mean line
     const values = visible.map(pt => pt.y);
     const meanVal = values.length ? values.reduce((a,b)=>a+b,0)/values.length : NaN;
     chart.data.datasets[0].data = visible;
@@ -267,30 +327,24 @@
   // sensor handler
   function onDeviceOrientation(e){
     if(!running) return;
-    // alpha/beta/gamma may be undefined on some browsers — guard
     const a = (typeof e.alpha === 'number') ? e.alpha : 0;
     const b = (typeof e.beta === 'number') ? e.beta : 0;
     const g = (typeof e.gamma === 'number') ? e.gamma : 0;
-    // pick axis per selected plane
     let raw = 0;
     switch(ui.plane.value){
-      case 'alpha': raw = ((a + 540) % 360) - 180; break; // yaw normalized
-      case 'beta': raw = b; break; // pitch
-      case 'gamma': raw = g; break; // roll
+      case 'alpha': raw = ((a + 540) % 360) - 180; break;
+      case 'beta': raw = b; break;
+      case 'gamma': raw = g; break;
       default: raw = b;
     }
     const adjusted = raw - zero;
-    // normalize to -180..180
     const wrapped = ((adjusted + 180) % 360) - 180;
     currentAngle = wrapped;
-    // update min/max
     if(wrapped > maxVal) maxVal = wrapped;
     if(wrapped < minVal) minVal = wrapped;
-    // push into session and chart buffers
     const now = new Date();
     sessionSamples.push({time: now, value: wrapped});
     pushToChart(now, wrapped);
-    // update UI and chart
     updateKPIs();
     refreshChart();
   }
@@ -302,7 +356,6 @@
       toast('DeviceOrientation not supported');
       return;
     }
-    // some iOS require requestPermission()
     if(typeof DeviceOrientationEvent.requestPermission === 'function'){
       DeviceOrientationEvent.requestPermission().then(permissionState => {
         if(permissionState === 'granted'){
@@ -317,7 +370,6 @@
         toast('Permission request failed');
       });
     } else {
-      // non-iOS (Chrome/Android) usually do not require request
       attachListener();
     }
   }
@@ -328,21 +380,38 @@
     listenerAdded = true;
     ui.sensorStatus.textContent = 'Sensors: ready';
     toast('Sensors enabled — press Start Session');
+    // ensure voices loaded if user wants spoken feedback
+    if('speechSynthesis' in window) {
+      loadVoicesAsync();
+    }
+  }
+
+  // async voices loader (ensures voices are loaded before pickVoice)
+  function loadVoicesAsync(){
+    return new Promise(resolve => {
+      loadVoices();
+      if(voicesLoaded) return resolve();
+      const handler = () => { loadVoices(); window.speechSynthesis.removeEventListener('voiceschanged', handler); resolve(); };
+      window.speechSynthesis.addEventListener('voiceschanged', handler);
+      // also set a timeout fallback
+      setTimeout(() => { loadVoices(); resolve(); }, 1000);
+    });
+  }
+
+  function loadVoices(){
+    VOICES = window.speechSynthesis.getVoices() || [];
+    voicesLoaded = VOICES.length > 0;
   }
 
   // auto-save routine (also speaks)
   function autoSaveAction(){
     if(!sessionSamples.length) return;
-    // compute mean and last reading
     const mean = sessionSamples.reduce((s,a)=>s+a.value,0) / sessionSamples.length;
     const last = sessionSamples[sessionSamples.length - 1];
-    // detailed timestamp with date
     const ts = new Date();
-    const timestamp = ts.toLocaleString(); // includes date and time
-    // create record and append to savedRecords + table
     const rec = {
       timestamp_iso: ts.toISOString(),
-      timestamp_local: timestamp,
+      timestamp_local: ts.toLocaleString(),
       joint: ui.joint.value,
       plane: ui.plane.value,
       side: ui.side.value,
@@ -351,13 +420,11 @@
     };
     savedRecords.push(rec);
     appendSavedRow(rec);
-    // speak reading
-    const speakStr = `${ui.joint.value} ${ui.side.value} — angle ${rec.angle} degrees. mean ${rec.mean} degrees.`;
+    // speak reading using preferred languages
+    const speakStr = `${rec.joint} ${rec.side} — angle ${rec.angle} degrees. mean ${rec.mean} degrees.`;
     speakText(speakStr);
-    toast('Auto-saved: ' + timestamp, 1500);
-    // keep chartData (do not clear) so chart stays continuous
-    // clear sessionSamples so next auto-window fresh (optional). We'll clear to keep mean per-interval meaningful
-    sessionSamples.length = 0;
+    toast('Auto-saved: ' + rec.timestamp_local, 1400);
+    sessionSamples.length = 0; // reset for next window
   }
 
   function appendSavedRow(rec){
@@ -368,7 +435,8 @@
 
   // Start/Stop controls
   ui.btnEnable.addEventListener('click', enableSensors);
-  ui.btnStart.addEventListener('click', () => {
+
+  ui.btnStart.addEventListener('click', async () => {
     if(!listenerAdded){
       toast('Enable sensors first');
       return;
@@ -376,18 +444,19 @@
     if(running) return;
     running = true;
     ui.sensorStatus.textContent = 'Session: running';
-    // start auto-save timer
+    // ensure voices loaded before first auto-speak
+    if('speechSynthesis' in window) await loadVoicesAsync();
     autoSaveTimer = setInterval(autoSaveAction, AUTO_SAVE_MS);
     toast('Session started');
   });
+
   ui.btnStop.addEventListener('click', () => {
     if(!running) return;
     running = false;
     ui.sensorStatus.textContent = 'Session: stopped';
     if(autoSaveTimer){ clearInterval(autoSaveTimer); autoSaveTimer = null; }
-    // also do one final save of remaining samples
-    autoSaveAction();
-    toast('Session stopped and final auto-save completed', 1500);
+    autoSaveAction(); // final save
+    toast('Session stopped and final save completed', 1600);
   });
 
   ui.btnCalibrate.addEventListener('click', () => {
@@ -401,11 +470,7 @@
 
   // CSV export
   ui.btnExport.addEventListener('click', () => {
-    if(!savedRecords.length){
-      toast('No saved sessions to export');
-      return;
-    }
-    // CSV header + rows with ISO timestamp and local timestamp
+    if(!savedRecords.length){ toast('No saved sessions to export'); return; }
     const header = ['timestamp_iso','timestamp_local','joint','plane','side','angle_deg','mean_deg'];
     const rows = savedRecords.map(r => [
       r.timestamp_iso,
@@ -424,15 +489,50 @@
     toast('Export ready');
   });
 
+  // voice preference change: reload voices if needed (optional)
+  ui.voicePref.addEventListener('change', () => {
+    // load voices now to pick matching
+    if('speechSynthesis' in window) loadVoicesAsync();
+    toast('TTS preference set');
+  });
+
+  // helper speak function uses pickVoice logic
+  function pickVoice(preferredLangs){
+    if(!voicesLoaded) loadVoices();
+    for(const pref of preferredLangs){
+      let v = VOICES.find(v => v.lang && v.lang.toLowerCase().startsWith(pref + '-'));
+      if(v) return v;
+      v = VOICES.find(v => v.lang && v.lang.toLowerCase().startsWith(pref));
+      if(v) return v;
+    }
+    let fallback = VOICES.find(v => v.lang && !v.lang.toLowerCase().startsWith('ar'));
+    return fallback || VOICES[0] || null;
+  }
+
+  function speakText(text){
+    if(!('speechSynthesis' in window) || !text) return;
+    if(!voicesLoaded) loadVoices();
+    const order = getPreferredLangOrder();
+    const voice = pickVoice(order);
+    try{
+      window.speechSynthesis.cancel();
+      const ut = new SpeechSynthesisUtterance(text);
+      ut.rate = 1.0; ut.pitch = 1.0;
+      if(voice){ ut.voice = voice; ut.lang = voice.lang || order[0]; }
+      else ut.lang = order[0];
+      window.speechSynthesis.speak(ut);
+    }catch(e){ console.warn('TTS error', e); }
+  }
+
+  // ensure voices loaded on page load (non-blocking)
+  if('speechSynthesis' in window) loadVoicesAsync().catch(()=>{});
+
   // On page visibility change, stop speech if needed
   document.addEventListener('visibilitychange', () => {
     if(document.hidden && 'speechSynthesis' in window) window.speechSynthesis.cancel();
   });
 
-  // Small demo: ensure voices loaded for TTS on some browsers
-  window.speechSynthesis && window.speechSynthesis.getVoices();
-
-  // expose for debug (optional)
+  // expose for debug
   window.YOUMOVE = { chartData, sessionSamples, savedRecords };
 
 })();
