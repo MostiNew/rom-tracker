@@ -5,48 +5,46 @@
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>YouMOVE – Deine Gelenkbewegung: privat, offline und vollkommen cloudfrei</title>
 
-<!-- Styles: mobile-first -->
+<!-- Styles: mobile-first, improved layout -->
 <style>
 :root{
   --bg:#0b1016; --card:#121820; --muted:#8aa0b2; --text:#eaf2f8;
   --accent:#50c878; --warn:#ffc857; --card-ink:#a9bfd2;
+  --gap:10px;
 }
 *{box-sizing:border-box}
 html,body{height:100%;margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;background:linear-gradient(180deg,#0b1016,#0e141c);color:var(--text)}
-.container{max-width:980px;margin:0 auto;padding:14px;display:flex;flex-direction:column;gap:12px}
-.header{display:flex;flex-direction:column;gap:8px}
-.header-top{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.container{max-width:980px;margin:0 auto;padding:14px;display:flex;flex-direction:column;gap:var(--gap)}
+.header{display:flex;flex-direction:column;gap:6px}
+.header-row{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
 h1{font-size:18px;margin:0}
 .controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 button{padding:10px 12px;border-radius:10px;border:1px solid #203040;background:#0b1118;color:var(--text);font-size:15px;cursor:pointer}
 .btn{display:inline-flex;align-items:center;justify-content:center}
 .btn.primary{background:var(--accent);color:#072d19;border-color:#0d5b3a;font-weight:700}
 .btn.warn{background:var(--warn);color:#432;border-color:#a77}
-.card{background:var(--card);border:1px solid #1d2732;border-radius:12px;padding:12px;box-shadow:0 8px 32px rgba(0,0,0,.32)}
+.card{background:var(--card);border:1px solid #1d2732;border-radius:12px;padding:12px;box-shadow:0 8px 28px rgba(0,0,0,.32)}
 .row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px}
-select,input{width:100%;padding:10px;border-radius:10px;border:1px solid #203040;background:#0b1118;color:var(--text);font-size:15px}
+select,input{width:100%;padding:10px;border-radius:10px;border:1px solid #203040;background:#08101a;color:var(--text);font-size:15px}
 .kpi{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+@media(min-width:720px){ .kpi{grid-template-columns:repeat(6,1fr)} .row{grid-template-columns:repeat(2,1fr)} }
 .tile{background:#08101a;border:1px solid #16222c;border-radius:10px;padding:10px;text-align:center}
 .tile span{font-size:12px;color:var(--muted);display:block}
 .tile h3{margin:6px 0 0;font-size:18px}
-canvas{width:100%!important;height:200px!important;border-radius:8px}
+canvas{width:100%!important;height:260px!important;border-radius:8px;display:block}
 .table-wrap{overflow:auto}
 table{width:100%;border-collapse:collapse;color:var(--card-ink);font-size:13px}
 th,td{padding:8px;border-bottom:1px solid #16222c;text-align:left;vertical-align:middle}
-th{font-weight:600;color:var(--accent);background:#081116}
-.hint{font-size:12px;color:var(--muted);margin-top:6px}
+th{font-weight:700;color:var(--accent);background:#081116}
+.small-muted{font-size:12px;color:var(--muted)}
 .pill{display:inline-block;padding:6px 10px;border-radius:999px;background:#081216;border:1px solid #16222c;font-size:13px}
 .controls-compact{display:flex;gap:6px;align-items:center}
 .select-small{padding:8px;border-radius:8px;background:#071014;border:1px solid #203040;color:var(--text);font-size:14px}
 .range{width:110px}
-.small-muted{font-size:12px;color:var(--muted)}
-@media(min-width:720px){
-  .header{flex-direction:row;align-items:center}
-  .kpi{grid-template-columns:repeat(6,1fr)}
-  .row{grid-template-columns:repeat(2,1fr)}
-}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:16px;background:#072027;padding:8px 12px;border-radius:10px;color:#dff6ea;display:none;z-index:999}
+.footer-note{font-size:13px;color:var(--muted);white-space:pre-wrap}
+.flex-gap{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 </style>
 
 <!-- Chart.js + moment adapter -->
@@ -57,8 +55,9 @@ th{font-weight:600;color:var(--accent);background:#081116}
 <body>
 <div class="container">
   <header class="header">
-    <div class="header-top">
+    <div class="header-row">
       <h1>YouMOVE – Deine Gelenkbewegung: privat, offline und vollkommen cloudfrei</h1>
+
       <div class="controls">
         <div class="controls-compact">
           <button id="btnEnable" class="btn primary">Enable Sensors</button>
@@ -66,16 +65,16 @@ th{font-weight:600;color:var(--accent);background:#081116}
           <button id="btnReset" class="btn">Reset Min/Max</button>
         </div>
 
-        <!-- compact TTS -->
-        <div style="display:flex;gap:8px;align-items:center">
-          <label class="small-muted" for="ttsMode" style="margin-right:6px">Audio</label>
+        <!-- compact TTS + simulation -->
+        <div class="flex-gap" style="margin-left:6px">
+          <label class="small-muted" for="ttsMode">Audio</label>
           <select id="ttsMode" class="select-small" title="Audio mode">
             <option value="off">Off</option>
             <option value="chime" selected>Chime</option>
             <option value="speak">Speak</option>
           </select>
 
-          <select id="voicePref" class="select-small" title="Preferred languages" style="margin-left:6px">
+          <select id="voicePref" class="select-small" title="Preferred languages">
             <option value="en,de,es">EN → DE → ES</option>
             <option value="de,en,es">DE → EN → ES</option>
             <option value="es,en,de">ES → EN → DE</option>
@@ -84,14 +83,19 @@ th{font-weight:600;color:var(--accent);background:#081116}
           <select id="voiceList" class="select-small" title="Voice (optional)"><option value="">Auto voice</option></select>
 
           <input id="vol" class="range" type="range" min="0" max="1" step="0.05" value="0.9" title="Volume" />
+
+          <label class="small-muted" style="margin-left:6px;display:inline-flex;align-items:center">Sim:
+            <input id="simulate" type="checkbox" style="margin-left:6px" />
+          </label>
         </div>
       </div>
     </div>
-    <div class="hint">Open on mobile (preferred). On iOS Safari tap <strong>Enable Sensors</strong> and grant motion & orientation permission, then press <strong>Start Session</strong>.</div>
+
+    <div class="small-muted">Open on a mobile device. On iOS tap <strong>Enable Sensors</strong> and grant permission, then press <strong>Start Session</strong>. Use <em>Sim</em> to test on desktop.</div>
   </header>
 
   <!-- settings -->
-  <section class="card" aria-label="Settings">
+  <section class="card">
     <div class="row">
       <div>
         <label for="joint">Joint</label>
@@ -109,8 +113,8 @@ th{font-weight:600;color:var(--accent);background:#081116}
   </section>
 
   <!-- KPIs & controls -->
-  <section class="card" aria-label="Session controls">
-    <div class="kpi">
+  <section class="card">
+    <div class="kpi" aria-hidden="false">
       <div class="tile"><span>Angle (°)</span><h3 id="angle">—</h3></div>
       <div class="tile"><span>Max (°)</span><h3 id="max">—</h3></div>
       <div class="tile"><span>Min (°)</span><h3 id="min">—</h3></div>
@@ -119,24 +123,24 @@ th{font-weight:600;color:var(--accent);background:#081116}
       <div class="tile"><span>Mode</span><h3 id="mode">—</h3></div>
     </div>
 
-    <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;align-items:center">
+    <div style="display:flex;gap:10px;margin-top:12px;align-items:center;flex-wrap:wrap">
       <button id="btnStart" class="btn primary">Start Session</button>
       <button id="btnStop" class="btn warn">Stop Session</button>
       <button id="btnExport" class="btn">Export CSV</button>
       <div class="pill" id="sensorStatus">Sensors: idle</div>
     </div>
 
-    <div class="hint">Session auto-saves every 20 seconds. Saved items appear below (with full date & time) and are exportable as CSV.</div>
+    <div class="small-muted" style="margin-top:8px">Session auto-saves every 20 seconds. Saved rows show full local date/time and can be exported as CSV.</div>
   </section>
 
   <!-- chart -->
-  <section class="card" aria-label="Live chart">
+  <section class="card">
     <strong>Live Session Chart (last 30s)</strong>
     <canvas id="liveChart" aria-label="Live angle chart"></canvas>
   </section>
 
   <!-- saved list -->
-  <section class="card" aria-label="Saved sessions">
+  <section class="card">
     <strong>Saved Sessions</strong>
     <div class="table-wrap" style="margin-top:8px">
       <table id="savedTable" aria-label="Saved sessions table">
@@ -147,8 +151,8 @@ th{font-weight:600;color:var(--accent);background:#081116}
   </section>
 
   <!-- disclaimer -->
-  <section class="card" aria-label="Disclaimer and contact">
-    <pre style="white-space:pre-wrap;margin:0;font-family:inherit;font-size:13px;color:var(--muted);">
+  <section class="card">
+    <div class="footer-note">
 Disclaimer: This tool is intended for screening, exercise guidance, and documentation support. It does not replace clinical judgment or certified goniometry where required.
 
 Intellectual Property: The software, design, code, and all algorithms are the intellectual property of Moustafa Mohammed Elsayed Ali and are protected by copyright and patent law. Any reproduction, distribution, or commercial use without explicit written permission is prohibited.
@@ -158,16 +162,15 @@ Adresse: Kronwittener Straße 1, 84367 Tann, Germany
 Telefon: +49 1522 5321568
 E-Mail: mostischmidbauer@web.de | dptmostafa@gmail.com
 LinkedIn: https://www.linkedin.com/in/moustafa-ali-024471aa/
-    </pre>
+    </div>
   </section>
 </div>
 
 <div id="toast" class="toast"></div>
 
-<!-- Script: functionality -->
+<!-- Script: fixed chart and layout improvements -->
 <script>
 (() => {
-  // UI refs
   const ui = {
     btnEnable: document.getElementById('btnEnable'),
     btnCalibrate: document.getElementById('btnCalibrate'),
@@ -191,7 +194,8 @@ LinkedIn: https://www.linkedin.com/in/moustafa-ali-024471aa/
     ttsMode: document.getElementById('ttsMode'),
     voicePref: document.getElementById('voicePref'),
     voiceList: document.getElementById('voiceList'),
-    vol: document.getElementById('vol')
+    vol: document.getElementById('vol'),
+    simulate: document.getElementById('simulate')
   };
 
   // state
@@ -200,14 +204,16 @@ LinkedIn: https://www.linkedin.com/in/moustafa-ali-024471aa/
   let zeroRef = 0;
   let minVal = Infinity, maxVal = -Infinity;
   let currentAngle = NaN;
-  const sessionSamples = []; // for the current 20s window
-  const chartBuffer = []; // rolling buffer for chart
-  const saved = []; // saved records
+  const sessionSamples = []; // current 20s buffer
+  const chartBuffer = [];    // rolling chart buffer (objects {x:Date,y:Number})
+  const saved = [];          // saved records (head-first)
   const LIVE_WINDOW_SEC = 30;
-  const AUTO_SAVE_MS = 20000; // 20s
+  const AUTO_SAVE_MS = 20000;
   let autoSaveTimer = null;
+  let simTimer = null;
+  let simStart = 0;
 
-  // Chart.js
+  // Chart
   const chart = new Chart(ui.liveChart.getContext('2d'), {
     type: 'line',
     data: {
@@ -219,6 +225,7 @@ LinkedIn: https://www.linkedin.com/in/moustafa-ali-024471aa/
     options: {
       animation:false,
       responsive:true,
+      maintainAspectRatio:false,
       interaction:{mode:'index',intersect:false},
       scales:{
         x:{ type:'time', time:{ tooltipFormat:'YYYY-MM-DD HH:mm:ss', unit:'second', displayFormats:{second:'HH:mm:ss'} }, ticks:{autoSkip:true, maxTicksLimit:6} },
@@ -228,71 +235,53 @@ LinkedIn: https://www.linkedin.com/in/moustafa-ali-024471aa/
     }
   });
 
-  // toast
+  // Toast
   function toast(msg, ms=1400){
-    ui.toast.textContent = msg;
-    ui.toast.style.display = 'block';
-    clearTimeout(ui.toast._t);
+    ui.toast.textContent = msg; ui.toast.style.display = 'block'; clearTimeout(ui.toast._t);
     ui.toast._t = setTimeout(()=> ui.toast.style.display = 'none', ms);
   }
 
-  // WebAudio chime (pleasant)
+  // WebAudio chime (two harmonics)
   const audioCtx = (window.AudioContext || window.webkitAudioContext) ? new (window.AudioContext || window.webkitAudioContext)() : null;
   function playChime(volume=0.9){
     if(!audioCtx) return;
     try{
       const now = audioCtx.currentTime;
-      const o = audioCtx.createOscillator();
-      const g = audioCtx.createGain();
-      // use two short harmonics for nicer timbre
+      const o1 = audioCtx.createOscillator();
       const o2 = audioCtx.createOscillator();
-      o.type='sine'; o.frequency.setValueAtTime(880, now);
-      o2.type='sine'; o2.frequency.setValueAtTime(1320, now);
+      const g = audioCtx.createGain();
+      o1.type='sine'; o2.type='sine';
+      o1.frequency.setValueAtTime(880, now); o2.frequency.setValueAtTime(1320, now);
       g.gain.setValueAtTime(0.0001, now);
-      g.gain.exponentialRampToValueAtTime(Math.max(0.01, volume*0.13), now + 0.006);
+      g.gain.exponentialRampToValueAtTime(Math.max(0.01, volume*0.12), now + 0.006);
       g.gain.exponentialRampToValueAtTime(0.0001, now + 0.32);
-      o.connect(g); o2.connect(g);
-      g.connect(audioCtx.destination);
-      o.start(now); o2.start(now);
-      o.stop(now + 0.32); o2.stop(now + 0.32);
+      o1.connect(g); o2.connect(g); g.connect(audioCtx.destination);
+      o1.start(now); o2.start(now);
+      o1.stop(now + 0.32); o2.stop(now + 0.32);
     }catch(e){ console.warn('chime error', e); }
   }
 
-  // speech synthesis helpers
+  // SpeechSynthesis
   let VOICES = [];
   function loadVoices(){
     VOICES = window.speechSynthesis ? window.speechSynthesis.getVoices() : [];
-    // populate voice list compact
     ui.voiceList.innerHTML = '<option value="">Auto voice</option>';
-    VOICES.forEach(v=>{
-      const opt = document.createElement('option');
-      opt.value = v.name;
-      opt.textContent = `${v.lang} — ${v.name}`;
-      ui.voiceList.appendChild(opt);
+    VOICES.forEach(v => {
+      const opt = document.createElement('option'); opt.value = v.name; opt.textContent = `${v.lang} — ${v.name}`; ui.voiceList.appendChild(opt);
     });
   }
-  if('speechSynthesis' in window){
-    loadVoices();
-    window.speechSynthesis.onvoiceschanged = loadVoices;
-  }
+  if('speechSynthesis' in window){ loadVoices(); window.speechSynthesis.onvoiceschanged = loadVoices; }
 
   function pickVoice(prefOrder){
-    // prefOrder is e.g. ['en','de','es']
     if(!VOICES.length) loadVoices();
-    // user selection override
     if(ui.voiceList.value){
-      const v = VOICES.find(x=>x.name === ui.voiceList.value);
-      if(v) return v;
+      const sel = VOICES.find(v=>v.name === ui.voiceList.value); if(sel) return sel;
     }
     for(const p of prefOrder){
-      let v = VOICES.find(x=>x.lang && x.lang.toLowerCase().startsWith(p+'-'));
-      if(v) return v;
-      v = VOICES.find(x=>x.lang && x.lang.toLowerCase().startsWith(p));
-      if(v) return v;
+      let v = VOICES.find(x=>x.lang && x.lang.toLowerCase().startsWith(p+'-')); if(v) return v;
+      v = VOICES.find(x=>x.lang && x.lang.toLowerCase().startsWith(p)); if(v) return v;
     }
-    // fallback: non-arabic voice or first available
-    let fallback = VOICES.find(x=>x.lang && !x.lang.toLowerCase().startsWith('ar'));
-    return fallback || VOICES[0] || null;
+    return VOICES.find(v=>v.lang && !v.lang.toLowerCase().startsWith('ar')) || VOICES[0] || null;
   }
 
   function speakText(text){
@@ -300,24 +289,21 @@ LinkedIn: https://www.linkedin.com/in/moustafa-ali-024471aa/
     if(mode === 'off') return;
     const vol = Number(ui.vol.value || 0.9);
     if(mode === 'chime'){ playChime(vol); return; }
-    // speak mode
     if(!('speechSynthesis' in window)) return;
     const order = (ui.voicePref.value || 'en,de,es').split(',').map(s=>s.trim());
     const voice = pickVoice(order);
     try{
       window.speechSynthesis.cancel();
-      const ut = new SpeechSynthesisUtterance(text);
-      ut.rate = 0.95; ut.pitch = 1.0; ut.volume = Math.max(0.05, Math.min(1, vol));
-      if(voice){ ut.voice = voice; ut.lang = voice.lang || order[0]; }
-      else ut.lang = order[0];
+      const ut = new SpeechSynthesisUtterance(text); ut.rate = 0.95; ut.pitch = 1.0; ut.volume = Math.max(0.05, Math.min(1,vol));
+      if(voice){ ut.voice = voice; ut.lang = voice.lang || order[0]; } else ut.lang = order[0];
       window.speechSynthesis.speak(ut);
     }catch(e){ console.warn('TTS error', e); }
   }
 
-  // push to chart rolling buffer and refresh
-  function pushToChart(time, value){
-    chartBuffer.push({x: time, y: value});
-    const cutoff = Date.now() - 10*60*1000; // keep last 10min
+  // chart helpers
+  function pushToChart(tsDate, value){
+    chartBuffer.push({x: tsDate, y: value});
+    const cutoff = Date.now() - (10*60*1000);
     while(chartBuffer.length && chartBuffer[0].x < cutoff) chartBuffer.shift();
   }
 
@@ -326,9 +312,9 @@ LinkedIn: https://www.linkedin.com/in/moustafa-ali-024471aa/
     const windowStart = now - LIVE_WINDOW_SEC * 1000;
     const visible = chartBuffer.filter(pt => pt.x >= windowStart);
     const values = visible.map(pt => pt.y);
-    const mean = values.length ? values.reduce((a,b)=>a+b,0)/values.length : NaN;
+    const meanVal = values.length ? values.reduce((a,b)=>a+b,0)/values.length : NaN;
     chart.data.datasets[0].data = visible.map(pt => ({x: pt.x, y: pt.y}));
-    chart.data.datasets[1].data = visible.map(pt => ({x: pt.x, y: mean}));
+    chart.data.datasets[1].data = visible.map(pt => ({x: pt.x, y: meanVal}));
     chart.update('none');
   }
 
@@ -349,8 +335,8 @@ LinkedIn: https://www.linkedin.com/in/moustafa-ali-024471aa/
     if(wrapped > maxVal) maxVal = wrapped;
     if(wrapped < minVal) minVal = wrapped;
     sessionSamples.push({t: Date.now(), value: wrapped});
-    pushToChart(Date.now(), wrapped);
-    // update KPIs
+    pushToChart(new Date(), wrapped);
+    // KPIs
     ui.angle.textContent = wrapped.toFixed(1);
     ui.max.textContent = isFinite(maxVal) ? maxVal.toFixed(1) : '—';
     ui.min.textContent = isFinite(minVal) ? minVal.toFixed(1) : '—';
@@ -361,128 +347,115 @@ LinkedIn: https://www.linkedin.com/in/moustafa-ali-024471aa/
     refreshChart();
   }
 
-  // attach listener (and populate voices)
+  // attach listener
   function attachListener(){
     if(listenerAdded) return;
     window.addEventListener('deviceorientation', onOrient, {passive:true});
-    listenerAdded = true;
-    ui.sensorStatus.textContent = 'Sensors: ready';
-    toast('Sensors enabled — press Start Session');
+    listenerAdded = true; ui.sensorStatus.textContent = 'Sensors: ready'; toast('Sensors enabled — press Start Session');
     if('speechSynthesis' in window) loadVoices();
   }
 
-  // enable sensors: handles iOS permission flow
+  // permission flow
   function enableSensors(){
-    if(!('DeviceOrientationEvent' in window)){
-      ui.sensorStatus.textContent = 'Sensors: not supported';
-      toast('Device orientation not supported');
-      return;
-    }
+    if(!('DeviceOrientationEvent' in window)){ ui.sensorStatus.textContent='Sensors: not supported'; toast('Device orientation not supported'); return; }
     if(typeof DeviceOrientationEvent.requestPermission === 'function'){
-      DeviceOrientationEvent.requestPermission().then(state=>{
-        if(state === 'granted') attachListener();
-        else { ui.sensorStatus.textContent = 'Sensors: blocked'; toast('Permission denied'); }
-      }).catch(err => { console.warn(err); ui.sensorStatus.textContent = 'Sensors: blocked'; toast('Permission error'); });
-    }else{
-      attachListener();
-    }
+      DeviceOrientationEvent.requestPermission().then(state => {
+        if(state === 'granted') attachListener(); else { ui.sensorStatus.textContent='Sensors: blocked'; toast('Permission denied'); }
+      }).catch(err => { console.warn(err); ui.sensorStatus.textContent='Sensors: blocked'; toast('Permission error'); });
+    } else attachListener();
   }
 
-  // autosave routine
+  // autosave
   function autoSave(){
     if(!sessionSamples.length) return;
     const mean = sessionSamples.reduce((s,x)=>s+x.value,0)/sessionSamples.length;
     const last = sessionSamples[sessionSamples.length - 1];
     const ts = new Date();
-    const rec = {
-      iso: ts.toISOString(),
-      local: ts.toLocaleString(),
-      joint: ui.joint.value,
-      plane: ui.plane.value,
-      side: ui.side.value,
-      angle: Number(last.value.toFixed(2)),
-      mean: Number(mean.toFixed(2))
-    };
-    saved.unshift(rec); // add to head
-    // render saved row
+    const rec = { iso: ts.toISOString(), local: ts.toLocaleString(), joint: ui.joint.value, plane: ui.plane.value, side: ui.side.value, angle: Number(last.value.toFixed(2)), mean: Number(mean.toFixed(2)) };
+    saved.unshift(rec);
+    // add row
     const tr = document.createElement('tr');
     tr.innerHTML = `<td>${rec.local}</td><td>${escapeHtml(rec.joint)}</td><td>${escapeHtml(rec.plane)}</td><td>${escapeHtml(rec.side)}</td><td>${rec.angle.toFixed(1)}</td><td>${rec.mean.toFixed(1)}</td>`;
     ui.savedTable.prepend(tr);
-    // audio feedback
+    // audio
     if(ui.ttsMode.value === 'chime') playChime(Number(ui.vol.value || 0.9));
-    else if(ui.ttsMode.value === 'speak'){
-      const txt = `${rec.joint} ${rec.side}. angle ${rec.angle} degrees. mean ${rec.mean} degrees.`;
-      speakText(txt);
-    }
+    else if(ui.ttsMode.value === 'speak') speakText(`${rec.joint} ${rec.side}. angle ${rec.angle} degrees. mean ${rec.mean} degrees.`);
     toast('Auto-saved: ' + rec.local, 1200);
-    sessionSamples.length = 0; // clear buffer for next window
+    sessionSamples.length = 0;
   }
 
-  // speak helper
+  // speakText wrapper uses pickVoice
+  function pickVoice(prefOrder){
+    if(!VOICES.length) loadVoices();
+    if(ui.voiceList.value){ const sel = VOICES.find(v=>v.name === ui.voiceList.value); if(sel) return sel; }
+    for(const p of prefOrder){
+      let v = VOICES.find(x=>x.lang && x.lang.toLowerCase().startsWith(p+'-')); if(v) return v;
+      v = VOICES.find(x=>x.lang && x.lang.toLowerCase().startsWith(p)); if(v) return v;
+    }
+    return VOICES.find(x=>x.lang && !x.lang.toLowerCase().startsWith('ar')) || VOICES[0] || null;
+  }
+
   function speakText(text){
+    if(ui.ttsMode.value === 'chime'){ playChime(Number(ui.vol.value||0.9)); return; }
     if(!('speechSynthesis' in window) || !text) return;
-    const prefOrder = (ui.voicePref.value || 'en,de,es').split(',').map(s=>s.trim());
-    const voice = pickVoice(prefOrder);
+    const order = (ui.voicePref.value || 'en,de,es').split(',').map(s=>s.trim());
+    const voice = pickVoice(order);
     try{
       window.speechSynthesis.cancel();
-      const u = new SpeechSynthesisUtterance(text);
-      u.rate = 0.95; u.pitch = 1.0; u.volume = Math.max(0.05, Math.min(1, Number(ui.vol.value || 0.9)));
-      if(voice){ u.voice = voice; u.lang = voice.lang || prefOrder[0]; } else u.lang = prefOrder[0];
-      window.speechSynthesis.speak(u);
+      const ut = new SpeechSynthesisUtterance(text); ut.rate = 0.95; ut.pitch = 1.0; ut.volume = Math.max(0.05, Math.min(1, Number(ui.vol.value||0.9)));
+      if(voice){ ut.voice = voice; ut.lang = voice.lang || order[0]; } else ut.lang = order[0];
+      window.speechSynthesis.speak(ut);
     }catch(e){ console.warn('TTS speak error', e); }
   }
 
-  // pick voice (supports user selection)
-  function pickVoice(prefOrder){
-    if(!VOICES || !VOICES.length) loadVoices();
-    // user selected voice override
-    if(ui.voiceList.value){
-      const v = VOICES.find(vv => vv.name === ui.voiceList.value);
-      if(v) return v;
-    }
-    for(const p of prefOrder){
-      let v = VOICES.find(vv => vv.lang && vv.lang.toLowerCase().startsWith(p + '-'));
-      if(v) return v;
-      v = VOICES.find(vv => vv.lang && vv.lang.toLowerCase().startsWith(p));
-      if(v) return v;
-    }
-    let fallback = VOICES.find(vv => vv.lang && !vv.lang.toLowerCase().startsWith('ar'));
-    return fallback || VOICES[0] || null;
-  }
-
-  // export saved as CSV
+  // export CSV
   function exportCSV(){
     if(!saved.length){ toast('No saved sessions'); return; }
     const header = ['timestamp_iso','timestamp_local','joint','plane','side','angle_deg','mean_deg'];
-    const rows = saved.map(r => {
-      return [r.iso, `"${r.local.replace(/"/g,'""')}"`, r.joint, r.plane, r.side, r.angle, r.mean].join(',');
-    });
+    const rows = saved.map(r => [r.iso, `"${r.local.replace(/"/g,'""')}"`, r.joint, r.plane, r.side, r.angle, r.mean].join(','));
     const csv = [header.join(','), ...rows].join('\n');
     const blob = new Blob(['\uFEFF' + csv], {type:'text/csv;charset=utf-8;'});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a'); a.href = url; a.download = `youmove_sessions_${new Date().toISOString().slice(0,19).replace(/[:T]/g,'-')}.csv`;
-    document.body.appendChild(a); a.click(); a.remove();
-    URL.revokeObjectURL(url);
+    const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `youmove_sessions_${new Date().toISOString().slice(0,19).replace(/[:T]/g,'-')}.csv`; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
     toast('Export ready');
   }
 
   // start/stop session
   ui.btnStart.addEventListener('click', () => {
-    if(!listenerAdded){ toast('Enable sensors first'); return; }
+    if(!listenerAdded && !ui.simulate.checked){ toast('Enable sensors first or enable Sim'); return; }
     if(running) return;
-    running = true;
-    ui.sensorStatus.textContent = 'Session: running';
-    // ensure voices ready
+    running = true; ui.sensorStatus.textContent = 'Session: running';
     if('speechSynthesis' in window) loadVoices();
     autoSaveTimer = setInterval(autoSave, AUTO_SAVE_MS);
+    // start simulation if requested
+    if(ui.simulate.checked){
+      simStart = Date.now();
+      simTimer = setInterval(() => {
+        // generate smooth sine wave around 30° with some noise
+        const t = (Date.now() - simStart)/1000;
+        const val = 30 + Math.sin(t*1.5)*25 + (Math.random()-0.5)*3;
+        // feed as if deviceorientation
+        sessionSamples.push({t: Date.now(), value: val});
+        pushToChart(new Date(), val);
+        // update KPIs & chart
+        if(val > maxVal) maxVal = val;
+        if(val < minVal) minVal = val;
+        ui.angle.textContent = val.toFixed(1);
+        ui.max.textContent = isFinite(maxVal)?maxVal.toFixed(1):'—';
+        ui.min.textContent = isFinite(minVal)?minVal.toFixed(1):'—';
+        const mean = sessionSamples.length ? sessionSamples.reduce((s,x)=>s+x.value,0)/sessionSamples.length : NaN;
+        ui.mean.textContent = sessionSamples.length ? mean.toFixed(1) : '—';
+        ui.mode.textContent = ui.joint.value.includes('Rest') ? 'Rest' : 'Active';
+        refreshChart();
+      }, 100); // ~10Hz sim
+    }
     toast('Session started');
   });
 
   ui.btnStop.addEventListener('click', () => {
     if(!running) return;
-    running = false;
-    ui.sensorStatus.textContent = 'Session: stopped';
-    clearInterval(autoSaveTimer); autoSaveTimer = null;
+    running = false; ui.sensorStatus.textContent = 'Session: stopped';
+    if(autoSaveTimer){ clearInterval(autoSaveTimer); autoSaveTimer = null; }
+    if(simTimer){ clearInterval(simTimer); simTimer = null; }
     autoSave(); // final save
     toast('Session stopped — final save done');
   });
@@ -494,43 +467,33 @@ LinkedIn: https://www.linkedin.com/in/moustafa-ali-024471aa/
     toast('Zero set to ' + zeroRef.toFixed(1));
   });
   ui.btnReset.addEventListener('click', () => {
-    minVal = Infinity; maxVal = -Infinity;
-    ui.min.textContent = '—'; ui.max.textContent = '—';
-    toast('Min/Max reset');
+    minVal = Infinity; maxVal = -Infinity; ui.min.textContent = '—'; ui.max.textContent = '—'; toast('Min/Max reset');
   });
   ui.btnExport.addEventListener('click', exportCSV);
 
-  // voice list and voices array
-  let VOICES = [];
+  // load voices initially
   function loadVoices(){
     VOICES = window.speechSynthesis ? window.speechSynthesis.getVoices() : [];
-    // populate voice list
     ui.voiceList.innerHTML = '<option value="">Auto voice</option>';
     VOICES.forEach(v => {
-      const opt = document.createElement('option');
-      opt.value = v.name;
-      opt.textContent = `${v.lang} — ${v.name}`;
-      ui.voiceList.appendChild(opt);
+      const opt = document.createElement('option'); opt.value = v.name; opt.textContent = `${v.lang} — ${v.name}`; ui.voiceList.appendChild(opt);
     });
   }
-  if('speechSynthesis' in window){
-    loadVoices();
-    window.speechSynthesis.onvoiceschanged = loadVoices;
-  }
+  let VOICES = [];
+  if('speechSynthesis' in window){ loadVoices(); window.speechSynthesis.onvoiceschanged = loadVoices; }
 
-  // helper escape to avoid injection in table
-  function escapeHtml(s){
-    return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
-  }
+  // helper escape for table
+  function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]); }
 
-  // cleanup on unload
+  // cleanup
   window.addEventListener('beforeunload', ()=>{
     if(listenerAdded) window.removeEventListener('deviceorientation', onOrient, {passive:true});
     if(autoSaveTimer) clearInterval(autoSaveTimer);
+    if(simTimer) clearInterval(simTimer);
     if('speechSynthesis' in window) window.speechSynthesis.cancel();
   });
 
-  // expose for debugging
+  // expose for debug
   window.YOUMOVE = { sessionSamples, chartBuffer, saved };
 
 })();
