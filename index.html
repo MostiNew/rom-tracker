@@ -1,22 +1,21 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="de">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>YouMOVE – Deine Gelenkbewegung: privat, offline und vollkommen cloudfrei</title>
 
-<!-- Styles: mobile-first, touch-friendly -->
+<!-- Styles: mobile-first -->
 <style>
 :root{
   --bg:#0b1016; --card:#121820; --muted:#8aa0b2; --text:#eaf2f8;
   --accent:#50c878; --warn:#ffc857; --card-ink:#a9bfd2;
 }
 *{box-sizing:border-box}
-html,body{height:100%;margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial}
-body{background:linear-gradient(180deg,#0b1016,#0e141c);color:var(--text);-webkit-font-smoothing:antialiased}
-.wrap{max-width:980px;margin:0 auto;padding:14px;display:flex;flex-direction:column;gap:12px}
-header{display:flex;flex-direction:column;gap:10px}
-.header-row{display:flex;justify-content:space-between;align-items:center;gap:10px}
+html,body{height:100%;margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;background:linear-gradient(180deg,#0b1016,#0e141c);color:var(--text)}
+.container{max-width:980px;margin:0 auto;padding:14px;display:flex;flex-direction:column;gap:12px}
+.header{display:flex;flex-direction:column;gap:8px}
+.header-top{display:flex;justify-content:space-between;align-items:center;gap:10px}
 h1{font-size:18px;margin:0}
 .controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 button{padding:10px 12px;border-radius:10px;border:1px solid #203040;background:#0b1118;color:var(--text);font-size:15px;cursor:pointer}
@@ -24,63 +23,59 @@ button{padding:10px 12px;border-radius:10px;border:1px solid #203040;background:
 .btn.primary{background:var(--accent);color:#072d19;border-color:#0d5b3a;font-weight:700}
 .btn.warn{background:var(--warn);color:#432;border-color:#a77}
 .card{background:var(--card);border:1px solid #1d2732;border-radius:12px;padding:12px;box-shadow:0 8px 32px rgba(0,0,0,.32)}
-select,input{width:100%;padding:10px;border-radius:10px;border:1px solid #203040;background:#0b1118;color:var(--text);font-size:15px}
 .row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px}
+select,input{width:100%;padding:10px;border-radius:10px;border:1px solid #203040;background:#0b1118;color:var(--text);font-size:15px}
 .kpi{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 .tile{background:#08101a;border:1px solid #16222c;border-radius:10px;padding:10px;text-align:center}
 .tile span{font-size:12px;color:var(--muted);display:block}
 .tile h3{margin:6px 0 0;font-size:18px}
-canvas{width:100%!important;height:180px!important;display:block;border-radius:8px}
+canvas{width:100%!important;height:200px!important;border-radius:8px}
+.table-wrap{overflow:auto}
 table{width:100%;border-collapse:collapse;color:var(--card-ink);font-size:13px}
-th,td{padding:8px;border-bottom:1px solid #16222c;text-align:left}
+th,td{padding:8px;border-bottom:1px solid #16222c;text-align:left;vertical-align:middle}
 th{font-weight:600;color:var(--accent);background:#081116}
 .hint{font-size:12px;color:var(--muted);margin-top:6px}
 .pill{display:inline-block;padding:6px 10px;border-radius:999px;background:#081216;border:1px solid #16222c;font-size:13px}
-.small-muted{font-size:12px;color:var(--muted)}
 .controls-compact{display:flex;gap:6px;align-items:center}
-.control-group{display:flex;flex-direction:column;gap:6px}
-.row-compact{display:flex;gap:8px;align-items:center}
-
-/* larger screens */
+.select-small{padding:8px;border-radius:8px;background:#071014;border:1px solid #203040;color:var(--text);font-size:14px}
+.range{width:110px}
+.small-muted{font-size:12px;color:var(--muted)}
 @media(min-width:720px){
-  header{flex-direction:row;align-items:center}
+  .header{flex-direction:row;align-items:center}
   .kpi{grid-template-columns:repeat(6,1fr)}
   .row{grid-template-columns:repeat(2,1fr)}
 }
-.select-small{padding:8px;border-radius:8px;background:#071014;border:1px solid #203040;color:var(--text);font-size:14px}
-.range{width:120px}
-.voice-controls{display:flex;gap:8px;align-items:center}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:16px;background:#072027;padding:8px 12px;border-radius:10px;color:#dff6ea;display:none;z-index:999}
 </style>
 
-<!-- Chart + moment adapter -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!-- Chart.js + moment adapter -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/moment@2.29.4/moment.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-moment@1.0.0"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-moment@1.0.0/dist/chartjs-adapter-moment.min.js"></script>
 </head>
 <body>
-<div class="wrap">
-
-  <header>
-    <div class="header-row">
+<div class="container">
+  <header class="header">
+    <div class="header-top">
       <h1>YouMOVE – Deine Gelenkbewegung: privat, offline und vollkommen cloudfrei</h1>
-
       <div class="controls">
         <div class="controls-compact">
           <button id="btnEnable" class="btn primary">Enable Sensors</button>
           <button id="btnCalibrate" class="btn">Set Zero</button>
-          <button id="btnResetMinMax" class="btn">Reset Min/Max</button>
+          <button id="btnReset" class="btn">Reset Min/Max</button>
         </div>
 
-        <!-- compact TTS controls -->
-        <div class="voice-controls" aria-hidden="false">
-          <label for="ttsMode" class="small-muted" style="margin-right:6px">Audio</label>
+        <!-- compact TTS -->
+        <div style="display:flex;gap:8px;align-items:center">
+          <label class="small-muted" for="ttsMode" style="margin-right:6px">Audio</label>
           <select id="ttsMode" class="select-small" title="Audio mode">
             <option value="off">Off</option>
-            <option value="chime">Chime only</option>
+            <option value="chime" selected>Chime</option>
             <option value="speak">Speak</option>
           </select>
 
-          <select id="voicePref" class="select-small" title="Preferred languages">
+          <select id="voicePref" class="select-small" title="Preferred languages" style="margin-left:6px">
             <option value="en,de,es">EN → DE → ES</option>
             <option value="de,en,es">DE → EN → ES</option>
             <option value="es,en,de">ES → EN → DE</option>
@@ -92,12 +87,11 @@ th{font-weight:600;color:var(--accent);background:#081116}
         </div>
       </div>
     </div>
-
-    <div class="hint">Open on a mobile device (or desktop). On iOS you must tap <strong>Enable Sensors</strong> to allow motion access. Choose <em>Chime</em> or <em>Speak</em> for audio feedback on autosave.</div>
+    <div class="hint">Open on mobile (preferred). On iOS Safari tap <strong>Enable Sensors</strong> and grant motion & orientation permission, then press <strong>Start Session</strong>.</div>
   </header>
 
-  <!-- selections -->
-  <div class="card" role="region" aria-label="Measurement settings">
+  <!-- settings -->
+  <section class="card" aria-label="Settings">
     <div class="row">
       <div>
         <label for="joint">Joint</label>
@@ -112,17 +106,17 @@ th{font-weight:600;color:var(--accent);background:#081116}
       <label for="side">Side</label>
       <select id="side"><option>Right</option><option>Left</option><option>Midline</option></select>
     </div>
-  </div>
+  </section>
 
-  <!-- KPIs + controls -->
-  <div class="card" role="region" aria-label="Session controls">
-    <div class="kpi" aria-hidden="false">
+  <!-- KPIs & controls -->
+  <section class="card" aria-label="Session controls">
+    <div class="kpi">
       <div class="tile"><span>Angle (°)</span><h3 id="angle">—</h3></div>
       <div class="tile"><span>Max (°)</span><h3 id="max">—</h3></div>
       <div class="tile"><span>Min (°)</span><h3 id="min">—</h3></div>
       <div class="tile"><span>Zero Ref (°)</span><h3 id="zero">—</h3></div>
       <div class="tile"><span>Mean (°)</span><h3 id="mean">—</h3></div>
-      <div class="tile"><span>Mode</span><h3 id="jointRest">—</h3></div>
+      <div class="tile"><span>Mode</span><h3 id="mode">—</h3></div>
     </div>
 
     <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;align-items:center">
@@ -132,29 +126,29 @@ th{font-weight:600;color:var(--accent);background:#081116}
       <div class="pill" id="sensorStatus">Sensors: idle</div>
     </div>
 
-    <div class="hint">Sessions auto-save every 20 seconds. You can choose chime or speech feedback. Volume and voice are adjustable.</div>
-  </div>
+    <div class="hint">Session auto-saves every 20 seconds. Saved items appear below (with full date & time) and are exportable as CSV.</div>
+  </section>
 
   <!-- chart -->
-  <div class="card" role="region" aria-label="Live chart">
+  <section class="card" aria-label="Live chart">
     <strong>Live Session Chart (last 30s)</strong>
     <canvas id="liveChart" aria-label="Live angle chart"></canvas>
-  </div>
+  </section>
 
-  <!-- saved -->
-  <div class="card" role="region" aria-label="Saved session list">
+  <!-- saved list -->
+  <section class="card" aria-label="Saved sessions">
     <strong>Saved Sessions</strong>
-    <div style="overflow:auto;margin-top:8px;">
-      <table id="savedSessionsTable" aria-label="Saved sessions table">
-        <thead><tr><th>Timestamp</th><th>Joint</th><th>Plane</th><th>Side</th><th>Angle</th><th>Mean</th></tr></thead>
+    <div class="table-wrap" style="margin-top:8px">
+      <table id="savedTable" aria-label="Saved sessions table">
+        <thead><tr><th>Timestamp (local)</th><th>Joint</th><th>Plane</th><th>Side</th><th>Angle°</th><th>Mean°</th></tr></thead>
         <tbody></tbody>
       </table>
     </div>
-  </div>
+  </section>
 
-  <!-- disclaimer & IP (exact text requested) -->
-  <div class="card" role="region" aria-label="Disclaimer and contact">
-    <p style="font-size:13px;color:var(--muted);margin:0;white-space:pre-wrap;">
+  <!-- disclaimer -->
+  <section class="card" aria-label="Disclaimer and contact">
+    <pre style="white-space:pre-wrap;margin:0;font-family:inherit;font-size:13px;color:var(--muted);">
 Disclaimer: This tool is intended for screening, exercise guidance, and documentation support. It does not replace clinical judgment or certified goniometry where required.
 
 Intellectual Property: The software, design, code, and all algorithms are the intellectual property of Moustafa Mohammed Elsayed Ali and are protected by copyright and patent law. Any reproduction, distribution, or commercial use without explicit written permission is prohibited.
@@ -164,28 +158,20 @@ Adresse: Kronwittener Straße 1, 84367 Tann, Germany
 Telefon: +49 1522 5321568
 E-Mail: mostischmidbauer@web.de | dptmostafa@gmail.com
 LinkedIn: https://www.linkedin.com/in/moustafa-ali-024471aa/
-    </p>
-  </div>
-
+    </pre>
+  </section>
 </div>
 
-<!-- toast -->
-<div id="toast" style="position:fixed;left:50%;transform:translateX(-50%);bottom:16px;background:#072027;padding:8px 12px;border-radius:10px;color:#dff6ea;display:none;z-index:999"></div>
+<div id="toast" class="toast"></div>
 
-<!-- libs already imported above -->
+<!-- Script: functionality -->
 <script>
 (() => {
-  /* ---------- UI refs ---------- */
+  // UI refs
   const ui = {
-    angle: document.getElementById('angle'),
-    max: document.getElementById('max'),
-    min: document.getElementById('min'),
-    zero: document.getElementById('zero'),
-    mean: document.getElementById('mean'),
-    jointRest: document.getElementById('jointRest'),
     btnEnable: document.getElementById('btnEnable'),
     btnCalibrate: document.getElementById('btnCalibrate'),
-    btnResetMinMax: document.getElementById('btnResetMinMax'),
+    btnReset: document.getElementById('btnReset'),
     btnStart: document.getElementById('btnStart'),
     btnStop: document.getElementById('btnStop'),
     btnExport: document.getElementById('btnExport'),
@@ -193,265 +179,302 @@ LinkedIn: https://www.linkedin.com/in/moustafa-ali-024471aa/
     plane: document.getElementById('plane'),
     side: document.getElementById('side'),
     sensorStatus: document.getElementById('sensorStatus'),
-    savedBody: document.querySelector('#savedSessionsTable tbody'),
+    angle: document.getElementById('angle'),
+    max: document.getElementById('max'),
+    min: document.getElementById('min'),
+    zero: document.getElementById('zero'),
+    mean: document.getElementById('mean'),
+    mode: document.getElementById('mode'),
+    liveChart: document.getElementById('liveChart'),
+    savedTable: document.querySelector('#savedTable tbody'),
     toast: document.getElementById('toast'),
-    chartCanvas: document.getElementById('liveChart'),
     ttsMode: document.getElementById('ttsMode'),
     voicePref: document.getElementById('voicePref'),
     voiceList: document.getElementById('voiceList'),
     vol: document.getElementById('vol')
   };
 
-  /* ---------- State ---------- */
-  let running = false;
+  // state
   let listenerAdded = false;
-  let zero = 0;
+  let running = false;
+  let zeroRef = 0;
   let minVal = Infinity, maxVal = -Infinity;
   let currentAngle = NaN;
-  const sessionSamples = [];   // current 20s buffer
-  const chartData = [];        // rolling chart buffer
-  const savedRecords = [];     // saved sessions
+  const sessionSamples = []; // for the current 20s window
+  const chartBuffer = []; // rolling buffer for chart
+  const saved = []; // saved records
   const LIVE_WINDOW_SEC = 30;
   const AUTO_SAVE_MS = 20000; // 20s
   let autoSaveTimer = null;
 
-  /* ---------- Chart.js setup ---------- */
-  const chart = new Chart(ui.chartCanvas.getContext('2d'), {
+  // Chart.js
+  const chart = new Chart(ui.liveChart.getContext('2d'), {
     type: 'line',
-    data: { datasets: [
-      { label: 'Angle (°)', data: [], borderColor:'#50c878', backgroundColor:'rgba(80,200,120,0.08)', pointRadius:0, tension:0.15 },
-      { label: 'Mean', data: [], borderColor:'#ffc857', borderDash:[6,4], pointRadius:0, fill:false, tension:0 }
-    ]},
+    data: {
+      datasets: [
+        { label: 'Angle (°)', data: [], borderColor:'#50c878', backgroundColor:'rgba(80,200,120,0.08)', pointRadius:0, tension:0.15 },
+        { label: 'Mean', data: [], borderColor:'#ffc857', borderDash:[6,4], pointRadius:0, fill:false, tension:0 }
+      ]
+    },
     options: {
-      animation: false,
-      responsive: true,
-      interaction: { mode: 'index', intersect: false },
-      stacked: false,
-      scales: {
-        x: { type: 'time', time: { tooltipFormat: 'YYYY-MM-DD HH:mm:ss', unit: 'second', displayFormats: { second:'HH:mm:ss' } }, ticks:{ autoSkip:true, maxTicksLimit:6 } },
-        y: { beginAtZero:false }
+      animation:false,
+      responsive:true,
+      interaction:{mode:'index',intersect:false},
+      scales:{
+        x:{ type:'time', time:{ tooltipFormat:'YYYY-MM-DD HH:mm:ss', unit:'second', displayFormats:{second:'HH:mm:ss'} }, ticks:{autoSkip:true, maxTicksLimit:6} },
+        y:{ beginAtZero:false }
       },
-      plugins: { legend: { display: true } }
+      plugins:{legend:{display:true}}
     }
   });
 
-  function toast(msg, ms=1400){ ui.toast.textContent = msg; ui.toast.style.display='block'; clearTimeout(ui._t); ui._t=setTimeout(()=>ui.toast.style.display='none', ms); }
+  // toast
+  function toast(msg, ms=1400){
+    ui.toast.textContent = msg;
+    ui.toast.style.display = 'block';
+    clearTimeout(ui.toast._t);
+    ui.toast._t = setTimeout(()=> ui.toast.style.display = 'none', ms);
+  }
 
-  /* ---------- WebAudio for chime ---------- */
+  // WebAudio chime (pleasant)
   const audioCtx = (window.AudioContext || window.webkitAudioContext) ? new (window.AudioContext || window.webkitAudioContext)() : null;
-  function playChime(vol=0.9){
+  function playChime(volume=0.9){
     if(!audioCtx) return;
     try{
       const now = audioCtx.currentTime;
       const o = audioCtx.createOscillator();
       const g = audioCtx.createGain();
-      o.type = 'sine';
-      o.frequency.setValueAtTime(880, now); // pitch
-      g.gain.setValueAtTime(vol * 0.0001 + 0.0001, now); // start micro-gain to avoid pops
-      // short percussive envelope
-      g.gain.exponentialRampToValueAtTime(Math.max(0.01,vol*0.15), now + 0.005);
-      g.gain.exponentialRampToValueAtTime(0.0001, now + 0.25);
-      o.connect(g);
+      // use two short harmonics for nicer timbre
+      const o2 = audioCtx.createOscillator();
+      o.type='sine'; o.frequency.setValueAtTime(880, now);
+      o2.type='sine'; o2.frequency.setValueAtTime(1320, now);
+      g.gain.setValueAtTime(0.0001, now);
+      g.gain.exponentialRampToValueAtTime(Math.max(0.01, volume*0.13), now + 0.006);
+      g.gain.exponentialRampToValueAtTime(0.0001, now + 0.32);
+      o.connect(g); o2.connect(g);
       g.connect(audioCtx.destination);
-      o.start(now);
-      o.stop(now + 0.27);
+      o.start(now); o2.start(now);
+      o.stop(now + 0.32); o2.stop(now + 0.32);
     }catch(e){ console.warn('chime error', e); }
   }
 
-  /* ---------- SpeechSynthesis helpers ---------- */
-  let VOICES = [], voicesLoaded = false;
+  // speech synthesis helpers
+  let VOICES = [];
   function loadVoices(){
     VOICES = window.speechSynthesis ? window.speechSynthesis.getVoices() : [];
-    voicesLoaded = VOICES.length > 0;
-    // populate voiceList control (compact)
-    if(ui.voiceList){
-      const selected = ui.voiceList.value || '';
-      ui.voiceList.innerHTML = '<option value="">Auto voice</option>';
-      VOICES.forEach(v=>{
-        const label = `${v.lang} — ${v.name}`;
-        const opt = document.createElement('option'); opt.value = v.name + '||' + v.lang; opt.textContent = label;
-        ui.voiceList.appendChild(opt);
-      });
-      // restore selection if possible
-      if(selected) ui.voiceList.value = selected;
-    }
+    // populate voice list compact
+    ui.voiceList.innerHTML = '<option value="">Auto voice</option>';
+    VOICES.forEach(v=>{
+      const opt = document.createElement('option');
+      opt.value = v.name;
+      opt.textContent = `${v.lang} — ${v.name}`;
+      ui.voiceList.appendChild(opt);
+    });
   }
   if('speechSynthesis' in window){
     loadVoices();
     window.speechSynthesis.onvoiceschanged = loadVoices;
   }
 
-  function getPreferredLangOrder(){
-    return (ui.voicePref.value || 'en,de,es').split(',').map(s=>s.trim().toLowerCase());
-  }
-
-  function pickVoice(preferred){
-    if(!voicesLoaded) loadVoices();
-    // If user selected exact voice
-    const sel = ui.voiceList.value;
-    if(sel){
-      const parts = sel.split('||');
-      const name = parts[0];
-      const found = VOICES.find(v=>v.name === name);
-      if(found) return found;
-    }
-    // otherwise choose by preferred order
-    for(const p of preferred){
-      let v = VOICES.find(v=>v.lang && v.lang.toLowerCase().startsWith(p+'-'));
-      if(v) return v;
-      v = VOICES.find(v=>v.lang && v.lang.toLowerCase().startsWith(p));
+  function pickVoice(prefOrder){
+    // prefOrder is e.g. ['en','de','es']
+    if(!VOICES.length) loadVoices();
+    // user selection override
+    if(ui.voiceList.value){
+      const v = VOICES.find(x=>x.name === ui.voiceList.value);
       if(v) return v;
     }
-    // fallback non-Arabic
-    let fallback = VOICES.find(v => v.lang && !v.lang.toLowerCase().startsWith('ar'));
+    for(const p of prefOrder){
+      let v = VOICES.find(x=>x.lang && x.lang.toLowerCase().startsWith(p+'-'));
+      if(v) return v;
+      v = VOICES.find(x=>x.lang && x.lang.toLowerCase().startsWith(p));
+      if(v) return v;
+    }
+    // fallback: non-arabic voice or first available
+    let fallback = VOICES.find(x=>x.lang && !x.lang.toLowerCase().startsWith('ar'));
     return fallback || VOICES[0] || null;
   }
 
   function speakText(text){
-    if(!('speechSynthesis' in window) || !text) return;
     const mode = ui.ttsMode.value;
     if(mode === 'off') return;
     const vol = Number(ui.vol.value || 0.9);
     if(mode === 'chime'){ playChime(vol); return; }
-    // speak
-    const pref = getPreferredLangOrder();
-    const voice = pickVoice(pref);
+    // speak mode
+    if(!('speechSynthesis' in window)) return;
+    const order = (ui.voicePref.value || 'en,de,es').split(',').map(s=>s.trim());
+    const voice = pickVoice(order);
     try{
       window.speechSynthesis.cancel();
       const ut = new SpeechSynthesisUtterance(text);
       ut.rate = 0.95; ut.pitch = 1.0; ut.volume = Math.max(0.05, Math.min(1, vol));
-      if(voice){ ut.voice = voice; ut.lang = voice.lang || pref[0]; }
-      else ut.lang = pref[0];
+      if(voice){ ut.voice = voice; ut.lang = voice.lang || order[0]; }
+      else ut.lang = order[0];
       window.speechSynthesis.speak(ut);
     }catch(e){ console.warn('TTS error', e); }
   }
 
-  /* ---------- data helpers ---------- */
+  // push to chart rolling buffer and refresh
   function pushToChart(time, value){
-    chartData.push({x: time, y: value});
-    // keep last 10 minutes to avoid memory growth
-    const cutoff = new Date(Date.now() - 10*60*1000);
-    while(chartData.length && chartData[0].x < cutoff) chartData.shift();
-  }
-
-  function updateKPIs(){
-    ui.angle.textContent = Number.isFinite(currentAngle) ? currentAngle.toFixed(1) : '—';
-    ui.min.textContent = isFinite(minVal) ? minVal.toFixed(1) : '—';
-    ui.max.textContent = isFinite(maxVal) ? maxVal.toFixed(1) : '—';
-    ui.zero.textContent = Number.isFinite(zero) ? zero.toFixed(1) : '—';
-    const mean = sessionSamples.length ? sessionSamples.reduce((s,a)=>s+a.value,0)/sessionSamples.length : NaN;
-    ui.mean.textContent = sessionSamples.length ? mean.toFixed(1) : '—';
-    ui.jointRest.textContent = ui.joint.value.includes('Rest') ? 'Rest' : 'Active';
+    chartBuffer.push({x: time, y: value});
+    const cutoff = Date.now() - 10*60*1000; // keep last 10min
+    while(chartBuffer.length && chartBuffer[0].x < cutoff) chartBuffer.shift();
   }
 
   function refreshChart(){
-    const now = new Date();
-    const windowStart = new Date(now.getTime() - LIVE_WINDOW_SEC*1000);
-    const visible = chartData.filter(pt => pt.x >= windowStart);
+    const now = Date.now();
+    const windowStart = now - LIVE_WINDOW_SEC * 1000;
+    const visible = chartBuffer.filter(pt => pt.x >= windowStart);
     const values = visible.map(pt => pt.y);
-    const meanVal = values.length ? values.reduce((a,b)=>a+b,0)/values.length : NaN;
-    chart.data.datasets[0].data = visible;
-    chart.data.datasets[1].data = visible.map(pt => ({x: pt.x, y: meanVal}));
+    const mean = values.length ? values.reduce((a,b)=>a+b,0)/values.length : NaN;
+    chart.data.datasets[0].data = visible.map(pt => ({x: pt.x, y: pt.y}));
+    chart.data.datasets[1].data = visible.map(pt => ({x: pt.x, y: mean}));
     chart.update('none');
   }
 
-  /* ---------- sensor handling ---------- */
-  function onDeviceOrientation(e){
+  // orientation handler
+  function onOrient(e){
     if(!running) return;
     const a = (typeof e.alpha === 'number') ? e.alpha : 0;
     const b = (typeof e.beta === 'number') ? e.beta : 0;
     const g = (typeof e.gamma === 'number') ? e.gamma : 0;
     let raw = 0;
-    switch(ui.plane.value){
-      case 'alpha': raw = ((a + 540) % 360) - 180; break;
-      case 'beta': raw = b; break;
-      case 'gamma': raw = g; break;
-      default: raw = b;
-    }
-    const adjusted = raw - zero;
+    const plane = ui.plane.value;
+    if(plane === 'alpha') raw = ((a + 540) % 360) - 180;
+    else if(plane === 'beta') raw = b;
+    else raw = g;
+    const adjusted = raw - zeroRef;
     const wrapped = ((adjusted + 180) % 360) - 180;
     currentAngle = wrapped;
     if(wrapped > maxVal) maxVal = wrapped;
     if(wrapped < minVal) minVal = wrapped;
-    const now = new Date();
-    sessionSamples.push({time: now, value: wrapped});
-    pushToChart(now, wrapped);
-    updateKPIs();
+    sessionSamples.push({t: Date.now(), value: wrapped});
+    pushToChart(Date.now(), wrapped);
+    // update KPIs
+    ui.angle.textContent = wrapped.toFixed(1);
+    ui.max.textContent = isFinite(maxVal) ? maxVal.toFixed(1) : '—';
+    ui.min.textContent = isFinite(minVal) ? minVal.toFixed(1) : '—';
+    ui.zero.textContent = Number.isFinite(zeroRef) ? zeroRef.toFixed(1) : '—';
+    const meanVal = sessionSamples.length ? sessionSamples.reduce((s,x)=>s+x.value,0)/sessionSamples.length : NaN;
+    ui.mean.textContent = sessionSamples.length ? meanVal.toFixed(1) : '—';
+    ui.mode.textContent = ui.joint.value.includes('Rest') ? 'Rest' : 'Active';
     refreshChart();
   }
 
+  // attach listener (and populate voices)
   function attachListener(){
     if(listenerAdded) return;
-    window.addEventListener('deviceorientation', onDeviceOrientation, {passive:true});
+    window.addEventListener('deviceorientation', onOrient, {passive:true});
     listenerAdded = true;
     ui.sensorStatus.textContent = 'Sensors: ready';
     toast('Sensors enabled — press Start Session');
-    // populate voices list if available
     if('speechSynthesis' in window) loadVoices();
   }
 
+  // enable sensors: handles iOS permission flow
   function enableSensors(){
     if(!('DeviceOrientationEvent' in window)){
       ui.sensorStatus.textContent = 'Sensors: not supported';
-      toast('Device orientation unsupported');
+      toast('Device orientation not supported');
       return;
     }
-    // iOS permission flow
     if(typeof DeviceOrientationEvent.requestPermission === 'function'){
-      DeviceOrientationEvent.requestPermission().then(p => {
-        if(p === 'granted') attachListener();
+      DeviceOrientationEvent.requestPermission().then(state=>{
+        if(state === 'granted') attachListener();
         else { ui.sensorStatus.textContent = 'Sensors: blocked'; toast('Permission denied'); }
       }).catch(err => { console.warn(err); ui.sensorStatus.textContent = 'Sensors: blocked'; toast('Permission error'); });
-    } else {
+    }else{
       attachListener();
     }
   }
 
-  /* ---------- autosave routine ---------- */
-  function autoSaveAction(){
+  // autosave routine
+  function autoSave(){
     if(!sessionSamples.length) return;
-    const mean = sessionSamples.reduce((s,a)=>s+a.value,0) / sessionSamples.length;
+    const mean = sessionSamples.reduce((s,x)=>s+x.value,0)/sessionSamples.length;
     const last = sessionSamples[sessionSamples.length - 1];
     const ts = new Date();
     const rec = {
-      timestamp_iso: ts.toISOString(),
-      timestamp_local: ts.toLocaleString(),
+      iso: ts.toISOString(),
+      local: ts.toLocaleString(),
       joint: ui.joint.value,
       plane: ui.plane.value,
       side: ui.side.value,
       angle: Number(last.value.toFixed(2)),
       mean: Number(mean.toFixed(2))
     };
-    savedRecords.push(rec);
-    appendSavedRow(rec);
-    // audio feedback according to mode
-    const mode = ui.ttsMode.value;
-    if(mode === 'chime'){ playChime(Number(ui.vol.value)); }
-    else if(mode === 'speak'){
-      const speakStr = `${rec.joint} ${rec.side} — angle ${rec.angle} degrees. mean ${rec.mean} degrees.`;
-      speakText(speakStr);
-    }
-    toast('Auto-saved: ' + rec.timestamp_local, 1200);
-    sessionSamples.length = 0; // reset buffer for next window
-  }
-
-  function appendSavedRow(rec){
+    saved.unshift(rec); // add to head
+    // render saved row
     const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${rec.timestamp_local}</td><td>${rec.joint}</td><td>${rec.plane}</td><td>${rec.side}</td><td>${rec.angle.toFixed(1)}</td><td>${rec.mean.toFixed(1)}</td>`;
-    ui.savedBody.prepend(tr);
+    tr.innerHTML = `<td>${rec.local}</td><td>${escapeHtml(rec.joint)}</td><td>${escapeHtml(rec.plane)}</td><td>${escapeHtml(rec.side)}</td><td>${rec.angle.toFixed(1)}</td><td>${rec.mean.toFixed(1)}</td>`;
+    ui.savedTable.prepend(tr);
+    // audio feedback
+    if(ui.ttsMode.value === 'chime') playChime(Number(ui.vol.value || 0.9));
+    else if(ui.ttsMode.value === 'speak'){
+      const txt = `${rec.joint} ${rec.side}. angle ${rec.angle} degrees. mean ${rec.mean} degrees.`;
+      speakText(txt);
+    }
+    toast('Auto-saved: ' + rec.local, 1200);
+    sessionSamples.length = 0; // clear buffer for next window
   }
 
-  /* ---------- controls ---------- */
-  ui.btnEnable.addEventListener('click', enableSensors);
+  // speak helper
+  function speakText(text){
+    if(!('speechSynthesis' in window) || !text) return;
+    const prefOrder = (ui.voicePref.value || 'en,de,es').split(',').map(s=>s.trim());
+    const voice = pickVoice(prefOrder);
+    try{
+      window.speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      u.rate = 0.95; u.pitch = 1.0; u.volume = Math.max(0.05, Math.min(1, Number(ui.vol.value || 0.9)));
+      if(voice){ u.voice = voice; u.lang = voice.lang || prefOrder[0]; } else u.lang = prefOrder[0];
+      window.speechSynthesis.speak(u);
+    }catch(e){ console.warn('TTS speak error', e); }
+  }
 
+  // pick voice (supports user selection)
+  function pickVoice(prefOrder){
+    if(!VOICES || !VOICES.length) loadVoices();
+    // user selected voice override
+    if(ui.voiceList.value){
+      const v = VOICES.find(vv => vv.name === ui.voiceList.value);
+      if(v) return v;
+    }
+    for(const p of prefOrder){
+      let v = VOICES.find(vv => vv.lang && vv.lang.toLowerCase().startsWith(p + '-'));
+      if(v) return v;
+      v = VOICES.find(vv => vv.lang && vv.lang.toLowerCase().startsWith(p));
+      if(v) return v;
+    }
+    let fallback = VOICES.find(vv => vv.lang && !vv.lang.toLowerCase().startsWith('ar'));
+    return fallback || VOICES[0] || null;
+  }
+
+  // export saved as CSV
+  function exportCSV(){
+    if(!saved.length){ toast('No saved sessions'); return; }
+    const header = ['timestamp_iso','timestamp_local','joint','plane','side','angle_deg','mean_deg'];
+    const rows = saved.map(r => {
+      return [r.iso, `"${r.local.replace(/"/g,'""')}"`, r.joint, r.plane, r.side, r.angle, r.mean].join(',');
+    });
+    const csv = [header.join(','), ...rows].join('\n');
+    const blob = new Blob(['\uFEFF' + csv], {type:'text/csv;charset=utf-8;'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = `youmove_sessions_${new Date().toISOString().slice(0,19).replace(/[:T]/g,'-')}.csv`;
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
+    toast('Export ready');
+  }
+
+  // start/stop session
   ui.btnStart.addEventListener('click', () => {
     if(!listenerAdded){ toast('Enable sensors first'); return; }
     if(running) return;
     running = true;
     ui.sensorStatus.textContent = 'Session: running';
-    // ensure voices loaded if speak mode
-    if('speechSynthesis' in window && ui.ttsMode.value === 'speak') loadVoices();
-    autoSaveTimer = setInterval(autoSaveAction, AUTO_SAVE_MS);
+    // ensure voices ready
+    if('speechSynthesis' in window) loadVoices();
+    autoSaveTimer = setInterval(autoSave, AUTO_SAVE_MS);
     toast('Session started');
   });
 
@@ -459,62 +482,56 @@ LinkedIn: https://www.linkedin.com/in/moustafa-ali-024471aa/
     if(!running) return;
     running = false;
     ui.sensorStatus.textContent = 'Session: stopped';
-    if(autoSaveTimer){ clearInterval(autoSaveTimer); autoSaveTimer = null; }
-    autoSaveAction(); // final save
-    toast('Session stopped — final save done', 1400);
+    clearInterval(autoSaveTimer); autoSaveTimer = null;
+    autoSave(); // final save
+    toast('Session stopped — final save done');
   });
 
+  ui.btnEnable.addEventListener('click', enableSensors);
   ui.btnCalibrate.addEventListener('click', () => {
-    zero = Number.isFinite(currentAngle) ? currentAngle : 0;
-    updateKPIs();
-    toast('Zero set to ' + zero.toFixed(1));
+    zeroRef = Number.isFinite(currentAngle) ? currentAngle : 0;
+    ui.zero.textContent = zeroRef.toFixed(1);
+    toast('Zero set to ' + zeroRef.toFixed(1));
   });
-
-  ui.btnResetMinMax.addEventListener('click', () => {
-    minVal = Infinity; maxVal = -Infinity; updateKPIs(); toast('Min/Max reset');
+  ui.btnReset.addEventListener('click', () => {
+    minVal = Infinity; maxVal = -Infinity;
+    ui.min.textContent = '—'; ui.max.textContent = '—';
+    toast('Min/Max reset');
   });
+  ui.btnExport.addEventListener('click', exportCSV);
 
-  ui.btnExport.addEventListener('click', () => {
-    if(!savedRecords.length){ toast('No saved sessions to export'); return; }
-    const header = ['timestamp_iso','timestamp_local','joint','plane','side','angle_deg','mean_deg'];
-    const rows = savedRecords.map(r => [
-      r.timestamp_iso,
-      `"${r.timestamp_local.replace(/"/g,'""')}"`,
-      r.joint,
-      r.plane,
-      r.side,
-      r.angle,
-      r.mean
-    ].join(','));
-    const csv = [header.join(','), ...rows].join('\n');
-    const blob = new Blob([`\uFEFF${csv}`], {type: 'text/csv;charset=utf-8;'});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a'); a.href = url; a.download = `youmove_sessions_${new Date().toISOString().slice(0,19).replace(/[:T]/g,'-')}.csv`;
-    document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
-    toast('Export ready');
-  });
-
-  // load voices into select when changed
-  ui.voicePref.addEventListener('change', () => { if('speechSynthesis' in window) loadVoices(); toast('TTS preference set'); });
-
-  // voiceList populated by loadVoices(); also refresh when voices change
+  // voice list and voices array
+  let VOICES = [];
   function loadVoices(){
-    VOICES = (window.speechSynthesis ? window.speechSynthesis.getVoices() : []) || [];
-    // populate voiceList
+    VOICES = window.speechSynthesis ? window.speechSynthesis.getVoices() : [];
+    // populate voice list
     ui.voiceList.innerHTML = '<option value="">Auto voice</option>';
-    VOICES.forEach(v=>{ const opt = document.createElement('option'); opt.value = v.name + '||' + (v.lang||''); opt.textContent = `${v.lang} — ${v.name}`; ui.voiceList.appendChild(opt); });
-    voicesLoaded = VOICES.length > 0;
+    VOICES.forEach(v => {
+      const opt = document.createElement('option');
+      opt.value = v.name;
+      opt.textContent = `${v.lang} — ${v.name}`;
+      ui.voiceList.appendChild(opt);
+    });
   }
   if('speechSynthesis' in window){
     loadVoices();
     window.speechSynthesis.onvoiceschanged = loadVoices;
   }
 
-  // stop speech on hide
-  document.addEventListener('visibilitychange', ()=>{ if(document.hidden && 'speechSynthesis' in window) window.speechSynthesis.cancel(); });
+  // helper escape to avoid injection in table
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
+  }
 
-  // expose internals for debugging if needed
-  window.YOUMOVE = { chartData, sessionSamples, savedRecords };
+  // cleanup on unload
+  window.addEventListener('beforeunload', ()=>{
+    if(listenerAdded) window.removeEventListener('deviceorientation', onOrient, {passive:true});
+    if(autoSaveTimer) clearInterval(autoSaveTimer);
+    if('speechSynthesis' in window) window.speechSynthesis.cancel();
+  });
+
+  // expose for debugging
+  window.YOUMOVE = { sessionSamples, chartBuffer, saved };
 
 })();
 </script>
