@@ -37,101 +37,101 @@ th{color:var(--muted);}
 </head>
 <body>
 <div class="wrap">
-  <header>
-    <h1>YouMOVE – Deine Gelenkbewegung: privat, offline und vollkommen cloudfrei</h1>
-    <div class="flex">
-      <button id="btnEnable" class="btn primary">Enable Sensors</button>
-      <button id="btnCalibrate" class="btn">Set Zero</button>
-      <button id="btnResetMinMax" class="btn">Reset Min/Max</button>
-    </div>
-  </header>
+<header>
+<h1>YouMOVE – Deine Gelenkbewegung: privat, offline und vollkommen cloudfrei</h1>
+<div class="flex">
+  <button id="btnEnable" class="btn primary">Enable Sensors</button>
+  <button id="btnCalibrate" class="btn">Set Zero</button>
+  <button id="btnResetMinMax" class="btn">Reset Min/Max</button>
+</div>
+</header>
 
-  <div class="card">
-    <div class="row">
-      <div>
-        <label>Joint</label>
-        <select id="joint">
-          <option>Shoulder</option>
-          <option>Elbow</option>
-          <option>Wrist</option>
-          <option>Hip</option>
-          <option>Knee</option>
-          <option>Ankle</option>
-          <option>Rest</option>
-        </select>
-      </div>
-      <div>
-        <label>Plane / Movement</label>
-        <select id="plane">
-          <option value="beta">Flexion/Extension (β)</option>
-          <option value="gamma">Abduction/Adduction (γ)</option>
-          <option value="alpha">Rotation (α)</option>
-        </select>
-      </div>
+<div class="card">
+  <div class="row">
+    <div>
+      <label>Joint</label>
+      <select id="joint">
+        <option>Shoulder</option>
+        <option>Elbow</option>
+        <option>Wrist</option>
+        <option>Hip</option>
+        <option>Knee</option>
+        <option>Ankle</option>
+        <option>Rest</option>
+      </select>
     </div>
-    <div class="row">
-      <div>
-        <label>Side</label>
-        <select id="side">
-          <option>Right</option>
-          <option>Left</option>
-          <option>Midline</option>
-        </select>
-      </div>
-      <div>
-        <label>TTS Language</label>
-        <select id="ttsLang">
-          <option value="en-US">English</option>
-          <option value="de-DE">Deutsch</option>
-          <option value="es-ES">Español</option>
-        </select>
-      </div>
+    <div>
+      <label>Plane / Movement</label>
+      <select id="plane">
+        <option value="beta">Flexion/Extension (β)</option>
+        <option value="gamma">Abduction/Adduction (γ)</option>
+        <option value="alpha">Rotation (α)</option>
+      </select>
     </div>
   </div>
-
-  <div class="card">
-    <div class="kpi">
-      <div class="tile"><span>Angle (°)</span><h3 id="angle">—</h3></div>
-      <div class="tile"><span>Max (°)</span><h3 id="max">—</h3></div>
-      <div class="tile"><span>Min (°)</span><h3 id="min">—</h3></div>
-      <div class="tile"><span>Zero Ref (°)</span><h3 id="zero">—</h3></div>
-      <div class="tile"><span>Mean (°)</span><h3 id="mean">—</h3></div>
-      <div class="tile"><span>Joint / Rest</span><h3 id="jointRest">—</h3></div>
+  <div class="row">
+    <div>
+      <label>Side</label>
+      <select id="side">
+        <option>Right</option>
+        <option>Left</option>
+        <option>Midline</option>
+      </select>
     </div>
-    <div style="margin-top:10px;">
-      <button id="btnStart" class="btn primary">Start</button>
-      <button id="btnStop" class="btn warn">Stop</button>
-      <button id="btnExport" class="btn">Export CSV</button>
-      <span id="sensorStatus" class="tile" style="padding:6px;">Sensors: idle</span>
+    <div>
+      <label>TTS Language</label>
+      <select id="ttsLang">
+        <option value="en-US">English</option>
+        <option value="de-DE">Deutsch</option>
+        <option value="es-ES">Español</option>
+      </select>
     </div>
   </div>
+</div>
 
-  <div class="card">
-    <canvas id="liveChart"></canvas>
+<div class="card">
+  <div class="kpi">
+    <div class="tile"><span>Angle (°)</span><h3 id="angle">—</h3></div>
+    <div class="tile"><span>Max (°)</span><h3 id="max">—</h3></div>
+    <div class="tile"><span>Min (°)</span><h3 id="min">—</h3></div>
+    <div class="tile"><span>Zero Ref (°)</span><h3 id="zero">—</h3></div>
+    <div class="tile"><span>Mean (°)</span><h3 id="mean">—</h3></div>
+    <div class="tile"><span>Joint / Rest</span><h3 id="jointRest">—</h3></div>
   </div>
+  <div style="margin-top:10px;">
+    <button id="btnStart" class="btn primary">Start</button>
+    <button id="btnStop" class="btn warn">Stop</button>
+    <button id="btnExport" class="btn">Export CSV</button>
+    <span id="sensorStatus" class="tile" style="padding:6px;">Sensors: idle</span>
+  </div>
+</div>
 
-  <div class="card table-container">
-    <table id="savedSessions">
-      <thead>
-        <tr>
-          <th>Timestamp</th><th>Joint</th><th>Plane</th><th>Side</th><th>Angle</th><th>Mean</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-  </div>
+<div class="card">
+  <canvas id="liveChart"></canvas>
+</div>
 
-  <div class="card">
-    <p style="color:var(--muted);font-size:12px;">
-      <strong>Disclaimer:</strong> This tool is intended for screening, exercise guidance, and documentation support. It does not replace clinical judgment or certified goniometry where required.<br><br>
-      <strong>Intellectual Property:</strong> The software, design, code, and all algorithms are the intellectual property of Moustafa Mohammed Elsayed Ali and are protected by copyright and patent law. Any reproduction, distribution, or commercial use without explicit written permission is prohibited.<br><br>
-      <strong>Contact:</strong> Moustafa Mohammed Elsayed Ali<br>
-      Adresse: Kronwittener Straße 1, 84367 Tann, Germany<br>
-      Telefon: +49 1522 5321568<br>
-      E-Mail: <a href="mailto:mostischmidbauer@web.de">mostischmidbauer@web.de</a> | <a href="mailto:dptmostafa@gmail.com">dptmostafa@gmail.com</a><br>
-      LinkedIn: <a href="https://www.linkedin.com/in/moustafa-ali-024471aa/" target="_blank">https://www.linkedin.com/in/moustafa-ali-024471aa/</a>
-    </p>
-  </div>
+<div class="card table-container">
+  <table id="savedSessions">
+    <thead>
+      <tr>
+        <th>Timestamp</th><th>Joint</th><th>Plane</th><th>Side</th><th>Angle</th><th>Mean</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</div>
+
+<div class="card">
+<p style="color:var(--muted);font-size:12px;">
+  <strong>Disclaimer:</strong> This tool is intended for screening, exercise guidance, and documentation support. It does not replace clinical judgment or certified goniometry where required.<br><br>
+  <strong>Intellectual Property:</strong> The software, design, code, and all algorithms are the intellectual property of Moustafa Mohammed Elsayed Ali and are protected by copyright and patent law. Any reproduction, distribution, or commercial use without explicit written permission is prohibited.<br><br>
+  <strong>Contact:</strong> Moustafa Mohammed Elsayed Ali<br>
+  Adresse: Kronwittener Straße 1, 84367 Tann, Germany<br>
+  Telefon: +49 1522 5321568<br>
+  E-Mail: <a href="mailto:mostischmidbauer@web.de">mostischmidbauer@web.de</a> | <a href="mailto:dptmostafa@gmail.com">dptmostafa@gmail.com</a><br>
+  LinkedIn: <a href="https://www.linkedin.com/in/moustafa-ali-024471aa/" target="_blank">https://www.linkedin.com/in/moustafa-ali-024471aa/</a>
+</p>
+</div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -195,7 +195,7 @@ th{color:var(--muted);}
       const a=e.alpha||0,b=e.beta||0,g=e.gamma||0;
       const val = getAngle(a,b,g,ui.plane.value)-zero;
       const angleVal = ((val+180)%360)-180;
-      if(isNaN(angleVal)) return; // skip invalid
+      if(isNaN(angleVal)) return;
       currentAngle = angleVal;
       if(currentAngle>max) max=currentAngle;
       if(currentAngle<min) min=currentAngle;
@@ -217,8 +217,8 @@ th{color:var(--muted);}
     ui.min.textContent=isFinite(min)?min.toFixed(1):'—';
     ui.max.textContent=isFinite(max)?max.toFixed(1):'—';
     ui.zero.textContent=zero.toFixed(1);
-    const mean = sessionSamples.length ? sessionSamples.reduce((a,b)=>a.value+b.value,0)/sessionSamples.length : 0;
-    ui.mean.textContent=sessionSamples.length?mean.toFixed(1):'—';
+    const mean = sessionSamples.filter(s=>!isNaN(s.value)).reduce((a,b)=>a+b.value,0) / (sessionSamples.filter(s=>!isNaN(s.value)).length || 1);
+    ui.mean.textContent=mean.toFixed(1);
     ui.jointRest.textContent = ui.joint.value.includes('Rest') ? 'Rest':'Active';
   }
 
@@ -236,14 +236,17 @@ th{color:var(--muted);}
 
   function autoSave(){
     if(!sessionSamples.length) return;
-    const mean = sessionSamples.reduce((a,b)=>a.value+b.value,0)/sessionSamples.length;
-    const last = sessionSamples[sessionSamples.length-1];
+    const validSamples = sessionSamples.filter(s=>!isNaN(s.value));
+    if(!validSamples.length) return;
+
+    const mean = validSamples.reduce((a,b)=>a+b.value,0)/validSamples.length;
+    const last = validSamples[validSamples.length-1];
     const row = document.createElement('tr');
     row.innerHTML = `<td>${last.time.toLocaleString()}</td><td>${ui.joint.value}</td><td>${ui.plane.value}</td><td>${ui.side.value}</td><td>${last.value.toFixed(1)}</td><td>${mean.toFixed(1)}</td>`;
     ui.savedSessions.appendChild(row);
 
     // TTS
-    if(window.speechSynthesis){
+    if(window.speechSynthesis && running){
       if(ttsUtterance) window.speechSynthesis.cancel();
       ttsUtterance = new SpeechSynthesisUtterance(`Angle: ${last.value.toFixed(1)} degrees`);
       ttsUtterance.lang = ui.ttsLang.value || 'en-US';
@@ -253,6 +256,7 @@ th{color:var(--muted);}
     }
 
     sessionSamples=[]; // clear buffer
+    updateKPI(); // recalc mean from empty buffer => mean remains last captured
   }
 
   ui.btnEnable.addEventListener('click', enableSensors);
@@ -278,6 +282,7 @@ th{color:var(--muted);}
     const a=document.createElement('a'); a.href=url; a.download='sessions.csv'; a.click();
     URL.revokeObjectURL(url);
   });
+
 })();
 </script>
 </body>
